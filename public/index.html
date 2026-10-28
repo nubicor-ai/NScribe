@@ -1,0 +1,1233 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#170F28">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="NScribe">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<style>html{scroll-padding-top:env(safe-area-inset-top,0px)}[hidden]:not([hidden=until-found i]){display:none!important}img{max-width:100%}body{margin:0}</style>
+</head>
+<body>
+<title>NScribe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+Tamil:wght@400;500&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: capture pane left, live note right (sticky); under 900px they become tabs. Saved encounters is a full-width view. Dark-first, Nubicor aubergine with lavender cloud and coral pulse. */
+:root {
+  --bg: #170F28;
+  --glow: radial-gradient(1100px 540px at 50% 0, #36235F 0%, rgba(54,35,95,0) 72%);
+  --surface: #231740;
+  --sunken: #1A1031;
+  --ink: #F4EEFF;
+  --muted: #A99BCB;
+  --line: #3B2C66;
+  --accent: #C9B3F0;
+  --accent-ink: #2A1B47;
+  --accent-soft: #34245A;
+  --cloud: #C9B3F0;
+  --coral: #FF7A6B;
+  --label: #F5B5A0;
+  --warn: #F5B544;
+  --warn-soft: #3B2D17;
+  --crit: #FF6F83;
+  --crit-soft: #4A1F36;
+  --ok: #6FD6A2;
+  --font-body: 'Poppins', 'Noto Sans Tamil', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg: #F6F2FC;
+    --glow: radial-gradient(1100px 520px at 50% 0, #E6DAFA 0%, rgba(230,218,250,0) 72%);
+    --surface: #FFFFFF; --sunken: #F1EBFA; --ink: #241543; --muted: #65578A; --line: #DCD2F0;
+    --accent: #5B3AA8; --accent-ink: #FFFFFF; --accent-soft: #E6DCF8; --cloud: #7A55C7;
+    --coral: #E4503F; --label: #A8432C; --warn: #8F5400; --warn-soft: #FBEBCB;
+    --crit: #BC2039; --crit-soft: #FCE0E5; --ok: #17794B;
+    color-scheme: light;
+  }
+}
+:root[data-theme="light"] {
+  --bg: #F6F2FC;
+  --glow: radial-gradient(1100px 520px at 50% 0, #E6DAFA 0%, rgba(230,218,250,0) 72%);
+  --surface: #FFFFFF; --sunken: #F1EBFA; --ink: #241543; --muted: #65578A; --line: #DCD2F0;
+  --accent: #5B3AA8; --accent-ink: #FFFFFF; --accent-soft: #E6DCF8; --cloud: #7A55C7;
+  --coral: #E4503F; --label: #A8432C; --warn: #8F5400; --warn-soft: #FBEBCB;
+  --crit: #BC2039; --crit-soft: #FCE0E5; --ok: #17794B;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--glow), var(--bg); background-repeat: no-repeat; background-color: var(--bg);
+  color: var(--ink); font-family: var(--font-body); font-size: 14.5px; line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 56px;
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--coral); outline-offset: 2px; }
+.wrap { max-width: 1180px; margin-inline: auto; }
+
+/* Header */
+.top {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+  background: var(--bg); background: color-mix(in srgb, var(--bg) 84%, transparent); backdrop-filter: blur(10px);
+  display: flex; align-items: center; gap: 10px 18px; flex-wrap: wrap; padding-block: 14px 12px;
+  border-bottom: 1px solid var(--line);
+}
+.brand { display: flex; align-items: center; gap: 12px; margin-right: auto; min-width: 0; }
+.brand svg { width: 48px; height: 35px; flex: none; }
+.brand .word { font-weight: 500; font-size: 1.5rem; letter-spacing: .04em; line-height: 1; }
+.brand .word i { font-style: normal; color: var(--coral); font-weight: 600; }
+.brand .prod { font-size: .66rem; font-weight: 500; letter-spacing: .22em; text-transform: uppercase; color: var(--label); padding-left: 12px; border-left: 1px solid var(--line); line-height: 1.2; }
+.savestate { font-family: var(--font-mono); font-size: .74rem; color: var(--muted); display: inline-flex; align-items: center; gap: 7px; font-variant-numeric: tabular-nums; }
+.savestate i { width: 7px; height: 7px; border-radius: 50%; background: var(--line); }
+.savestate[data-s="saving"] i { background: var(--coral); }
+.savestate[data-s="saved"] i { background: var(--ok); }
+.savestate[data-s="local"] i { background: var(--warn); }
+.clock { font-family: var(--font-mono); font-size: .76rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.savedbtn { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 6px 16px; font-weight: 500; font-size: .85rem; cursor: pointer; }
+.savedbtn[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.tabs { display: none; width: 100%; gap: 6px; }
+.tabs button { flex: 1; padding: 9px 8px; border: 1px solid var(--line); background: var(--surface); border-radius: 8px; font-weight: 500; font-size: .86rem; cursor: pointer; }
+.tabs button[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+
+/* Grid */
+.grid { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); gap: 24px; padding-top: 22px; align-items: start; }
+.pane { min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+.pane.note-pane { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 82px); }
+
+/* Cards */
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+.card > .hd, .sec > summary {
+  display: flex; align-items: center; gap: 10px; padding: 13px 18px; margin: 0;
+  font-weight: 600; font-size: .74rem; letter-spacing: .18em; text-transform: uppercase; color: var(--label);
+}
+.card > .hd { border-bottom: 1px solid var(--line); }
+.hd .sub, .sec .count { margin-left: auto; font-family: var(--font-mono); font-weight: 400; font-size: .72rem; letter-spacing: 0; text-transform: none; color: var(--muted); }
+.body { padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 14px; }
+.sec > summary { cursor: pointer; list-style: none; }
+.sec > summary::-webkit-details-marker { display: none; }
+.sec > summary::before { content: "▸"; color: var(--muted); font-size: .85em; transition: transform .12s; }
+.sec[open] > summary::before { transform: rotate(90deg); }
+.sec[open] > summary { border-bottom: 1px solid var(--line); }
+
+/* Form bits */
+label, .lbl { display: block; font-size: .68rem; font-weight: 500; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+.fld { width: 100%; padding: 9px 12px; background: var(--sunken); border: 1px solid var(--line); border-radius: 8px; resize: vertical; }
+textarea.fld { min-height: 2.7em; line-height: 1.5; overflow: hidden; }
+.fld::placeholder { color: var(--muted); opacity: .7; }
+.fld:focus { border-color: var(--accent); }
+.field.ai .fld { border-left: 3px solid var(--coral); }
+.field.ai > label::after { content: " · filled by Claude, verify"; color: var(--coral); letter-spacing: .02em; text-transform: none; font-weight: 500; }
+.row { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips.below { margin-top: 7px; }
+.chip { border: 1px solid var(--line); background: transparent; color: var(--muted); border-radius: 999px; padding: 4px 12px; font-size: .78rem; cursor: pointer; text-align: left; }
+.chip:hover { border-color: var(--coral); color: var(--ink); }
+.seg { display: flex; gap: 6px; flex-wrap: wrap; }
+.seg button { padding: 7px 14px; border: 1px solid var(--line); background: var(--sunken); border-radius: 8px; cursor: pointer; font-weight: 500; font-size: .88rem; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.seg button.t-red[aria-pressed="true"] { background: #C62F3B; border-color: #C62F3B; color: #fff; }
+.seg button.t-orange[aria-pressed="true"] { background: #D2690E; border-color: #D2690E; color: #fff; }
+.seg button.t-yellow[aria-pressed="true"] { background: #E8BC1C; border-color: #E8BC1C; color: #1B1500; }
+.seg button.t-green[aria-pressed="true"] { background: #23834F; border-color: #23834F; color: #fff; }
+.dot { display: inline-block; width: .62em; height: .62em; border-radius: 50%; margin-right: 7px; vertical-align: .04em; flex: none; }
+.toggle { display: inline-flex; align-items: center; gap: 9px; cursor: pointer; font-size: .88rem; font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--ink); margin: 0; }
+.toggle input { width: 18px; height: 18px; accent-color: var(--coral); }
+
+/* Dictation + buttons */
+.dict textarea { min-height: 8em; overflow: auto; font-size: .94rem; }
+.actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.btn { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 8px 16px; font-weight: 500; font-size: .88rem; cursor: pointer; }
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.btn.danger { border-color: var(--crit); color: var(--crit); }
+.btn[disabled] { opacity: .5; cursor: not-allowed; }
+.status { font-size: .82rem; color: var(--muted); min-height: 1.3em; }
+.status.err { color: var(--crit); }
+.hint { font-size: .78rem; color: var(--muted); margin: 0; }
+
+/* Vitals */
+.vgrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.v label { display: flex; justify-content: space-between; margin-bottom: 4px; }
+.v .flag { font-family: var(--font-mono); font-weight: 600; letter-spacing: 0; }
+.v .unit { font-weight: 400; letter-spacing: 0; text-transform: none; }
+.v input { font-family: var(--font-mono); font-size: 1.05rem; font-variant-numeric: tabular-nums; padding: 8px 12px; }
+.v[data-sev="warn"] input { border-color: var(--warn); background: var(--warn-soft); }
+.v[data-sev="warn"] .flag { color: var(--warn); }
+.v[data-sev="crit"] input { border-color: var(--crit); background: var(--crit-soft); }
+.v[data-sev="crit"] .flag { color: var(--crit); }
+.derived { display: flex; flex-wrap: wrap; gap: 8px; }
+.pill { font-family: var(--font-mono); font-size: .76rem; padding: 3px 11px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); font-variant-numeric: tabular-nums; }
+.pill.warn { border-color: var(--warn); background: var(--warn-soft); color: var(--warn); }
+.pill.crit { border-color: var(--crit); background: var(--crit-soft); color: var(--crit); font-weight: 500; }
+
+/* Note */
+.progress { height: 3px; background: var(--line); }
+.progress i { display: block; height: 100%; width: 0; background: var(--coral); transition: width .25s; }
+.note { padding: 18px 20px 6px; font-size: .9rem; }
+.note .title { font-weight: 700; font-size: 1.2rem; letter-spacing: .01em; margin: 0; line-height: 1.25; }
+.note .meta { font-family: var(--font-mono); font-size: .76rem; color: var(--muted); margin: 6px 0 0; overflow-wrap: anywhere; }
+.note .meta b { color: var(--ink); font-weight: 500; }
+.note .meta .t-red { color: var(--crit); } .note .meta .t-orange { color: var(--warn); } .note .meta .t-green { color: var(--ok); }
+.nb { margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--line); }
+.nb h3 { margin: 0 0 4px; font-weight: 600; font-size: .66rem; letter-spacing: .2em; text-transform: uppercase; color: var(--label); }
+.nb p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.nb p + p { margin-top: 2px; }
+.nb p.mono { font-family: var(--font-mono); font-size: .82rem; font-variant-numeric: tabular-nums; }
+.nb p.warn { color: var(--warn); } .nb p.crit { color: var(--crit); }
+.nb p.nd { color: var(--muted); font-style: italic; }
+.nb .k { font-family: var(--font-mono); font-weight: 500; color: var(--coral); margin-right: 8px; }
+.empty { color: var(--muted); padding: 22px 0 18px; font-size: .9rem; }
+.missing { padding: 12px 20px; border-top: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: .76rem; color: var(--muted); }
+.missing .pill { color: var(--ink); }
+.note-actions { padding: 12px 18px 14px; border-top: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.note-actions .status { flex-basis: 100%; }
+.foot { font-size: .74rem; color: var(--muted); padding: 0 20px 14px; margin: 0; }
+
+/* Saved encounters */
+.lib { padding-top: 22px; display: flex; flex-direction: column; gap: 16px; max-width: 760px; margin-inline: auto; }
+.libhead { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 12px 16px; }
+.libhead h2 { margin: 0; font-size: 1.35rem; font-weight: 600; line-height: 1.2; }
+.libhead p { margin: 2px 0 0; font-size: .8rem; color: var(--muted); }
+.libhead .btns { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; }
+.liblist { display: flex; flex-direction: column; }
+.item { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: stretch; border-bottom: 1px solid var(--line); }
+.item:last-child { border-bottom: 0; }
+.item .open { text-align: left; background: none; border: 0; padding: 14px 18px; cursor: pointer; min-width: 0; display: flex; flex-direction: column; gap: 3px; border-radius: 10px; }
+.item .open:hover { background: var(--accent-soft); }
+.item .ttl { font-weight: 600; font-size: .94rem; display: flex; align-items: center; min-width: 0; }
+.item .ttl span.t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.item .ttl .now { margin-left: 10px; font-family: var(--font-mono); font-weight: 400; font-size: .66rem; letter-spacing: .08em; text-transform: uppercase; color: var(--coral); border: 1px solid var(--coral); border-radius: 999px; padding: 0 8px; flex: none; }
+.item .sm { font-family: var(--font-mono); font-size: .72rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.item .sn { font-size: .82rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.item .del { background: none; border: 0; padding: 0 18px; color: var(--muted); font-size: .78rem; cursor: pointer; font-weight: 500; }
+.item .del:hover, .item .del.armed { color: var(--crit); }
+.libempty { padding: 30px 18px; color: var(--muted); text-align: center; font-size: .9rem; }
+.libempty b { display: block; color: var(--ink); font-weight: 600; margin-bottom: 4px; }
+.search { max-width: 100%; }
+
+.langrow { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 22px; }
+.langrow .toggle { padding-bottom: 8px; }
+.decsum { margin: 0; font-size: .9rem; }
+.dgroup h3 { margin: 0 0 4px; font-weight: 600; font-size: .66rem; letter-spacing: .2em; text-transform: uppercase; color: var(--label); }
+.dgroup + .dgroup { margin-top: 16px; }
+label.drow, .drow { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px; align-items: start; padding: 9px 0; border-top: 1px solid var(--line); cursor: pointer; text-transform: none; letter-spacing: 0; font-size: inherit; font-weight: 400; color: inherit; margin: 0; }
+.drow.plain { grid-template-columns: minmax(0, 1fr); cursor: default; }
+.drow input { width: 18px; height: 18px; margin-top: 3px; accent-color: var(--coral); }
+.dtxt { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.den { font-weight: 500; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; overflow-wrap: anywhere; }
+.tag { font-family: var(--font-mono); font-size: .66rem; font-weight: 400; border: 1px solid var(--line); border-radius: 999px; padding: 0 9px; color: var(--muted); }
+.tag.chk { border-color: var(--warn); background: var(--warn-soft); color: var(--warn); }
+.dsaid { font-size: .82rem; color: var(--muted); overflow-wrap: anywhere; }
+.dsaid::before { content: "“"; } .dsaid::after { content: "”"; }
+.desk { display: inline-flex; }
+@media (max-width: 899px) {
+  .desk { display: none; }
+  .grid { grid-template-columns: minmax(0, 1fr); padding-top: 14px; }
+  .tabs { display: flex; }
+  .pane[data-active="false"] { display: none; }
+  .pane.note-pane { position: static; }
+  .brand .prod { display: none; }
+  .savestate { margin-left: auto; }
+  .clock { display: none; }
+}
+@media (max-width: 520px) { .vgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <svg viewBox="0 0 60 44" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M14 38C8 38 5 33 6.5 28.5C7.5 25.5 10 24 12.5 23.5C13 17 18 13 23.5 13C27 13 30 14.8 31.8 17.4C33 16.6 34.6 16.2 36.2 16.2C41 16.2 44.5 19.8 44.5 24.5C44.5 25.2 44.4 25.8 44.2 26.4C47.5 26.9 49.5 29.5 49 32.5C48.6 35.5 46 38 42 38Z" stroke="var(--cloud)" stroke-width="2.8"/>
+        <path d="M21 34V22L33 34V22" stroke="var(--coral)" stroke-width="3.2"/>
+        <path d="M41 8.5A9 9 0 0 1 49.5 17" stroke="var(--cloud)" stroke-width="2.4"/>
+        <path d="M41 3A14.5 14.5 0 0 1 55 17.2" stroke="var(--cloud)" stroke-width="2.4" opacity=".45"/>
+      </svg>
+      <span class="word"><i>N</i>Scribe</span>
+      <span class="prod">by nubicor</span>
+    </div>
+    <div class="savestate" id="savestate" data-s="idle"><i></i><span id="savetext">Nothing to save yet</span></div>
+    <div class="clock" id="clock"></div>
+    <button class="savedbtn desk" id="savedbtn" aria-pressed="false">Saved encounters</button>
+    <div class="tabs" role="tablist" aria-label="View">
+      <button role="tab" id="tab-capture" aria-selected="true" data-tab="capture">Capture</button>
+      <button role="tab" id="tab-note" aria-selected="false" data-tab="note">Note</button>
+      <button role="tab" id="tab-saved" aria-selected="false" data-tab="saved">Saved</button>
+    </div>
+  </header>
+
+  <div class="grid" id="grid">
+    <div class="pane" id="pane-capture" data-active="true" role="tabpanel" aria-labelledby="tab-capture">
+      <section class="card dict">
+        <h2 class="hd">Conversation <span class="sub">Tamil · Hindi · English</span></h2>
+        <div class="body">
+          <div class="langrow">
+            <div class="field"><span class="lbl">Language</span><div class="seg" id="lang"></div></div>
+            <label class="toggle" title="Tamil, Hindi and English together, in script or romanised"><input type="checkbox" id="mix"> Mixed languages</label>
+            <label class="toggle" title="Say who reported each symptom"><input type="checkbox" id="spk"> Label who said what</label>
+          </div>
+          <div>
+            <label for="raw">Paste, dictate or load the conversation</label>
+            <textarea class="fld" id="raw" rows="6" placeholder="Patient: nenju vali rendu manineram-a irukku, left kai-ku pogudhu. Attender: bahut paseena aa raha tha doctor, saans bhi phool rahi hai. Fever illa. Sugar-ku tablet edukkaren..."></textarea>
+          </div>
+          <div class="actions">
+            <button class="btn primary" id="decode" hidden disabled>Decode conversation</button>
+            <button class="btn" id="structure" hidden disabled>Fill whole note</button>
+            <button class="btn" id="loadfile">Load transcript file</button>
+            <input type="file" id="filein" accept=".txt,.srt,.vtt,.md,text/plain" hidden>
+            <button class="btn" id="stop" hidden>Stop</button>
+            <button class="btn" id="clearraw">Clear text</button>
+          </div>
+          <div class="status" id="aistatus" role="status" aria-live="polite"></div>
+          <p class="hint">For voice, switch your phone keyboard to Tamil or Hindi and tap its mic, or export a transcript from your recorder app and load it here. Leave out names and hospital numbers. Text goes to Claude only when you tap Decode or Fill, and every result needs your check.</p>
+        </div>
+      </section>
+
+      <section class="card" id="deccard" hidden>
+        <h2 class="hd">Decoded history <span class="sub" id="declangs"></span></h2>
+        <div class="body">
+          <p class="decsum" id="decsum"></p>
+          <div id="decgroups"></div>
+          <div class="actions">
+            <button class="btn primary" id="decadd">Add selected to note</button>
+            <button class="btn" id="decclear">Clear decode</button>
+            <span class="status" id="decstatus" role="status" aria-live="polite"></span>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2 class="hd">Patient</h2>
+        <div class="body">
+          <div class="row">
+            <div class="field"><label for="age">Age</label><input class="fld" id="age" inputmode="numeric" placeholder="years"></div>
+            <div class="field"><span class="lbl">Sex</span><div class="seg" id="sex"></div></div>
+            <div class="field"><label for="bed">Bed</label><input class="fld" id="bed" placeholder="e.g. Red 3, HDU 2"></div>
+            <div class="field"><label for="arrival">Arrival</label>
+              <select class="fld" id="arrival"><option value="">Select</option><option>Walk-in</option><option>108 ambulance</option><option>Referred</option><option>Other</option></select>
+            </div>
+          </div>
+          <div class="field"><span class="lbl">Triage</span><div class="seg" id="triage"></div></div>
+          <label class="toggle"><input type="checkbox" id="mlc"> Medico-legal case (MLC)</label>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2 class="hd">Vitals <span class="sub">flags use adult cut-offs</span></h2>
+        <div class="body">
+          <div class="vgrid" id="vgrid"></div>
+          <div class="derived" id="derived"></div>
+        </div>
+      </section>
+
+      <div class="pane" id="sections"></div>
+    </div>
+
+    <div class="pane note-pane" id="pane-note" data-active="false" role="tabpanel" aria-labelledby="tab-note">
+      <section class="card">
+        <h2 class="hd">Live note <span class="sub" id="progtext"></span></h2>
+        <div class="progress" aria-hidden="true"><i id="progbar"></i></div>
+        <div class="note" id="note"></div>
+        <div class="missing" id="missing" hidden></div>
+        <div class="note-actions">
+          <button class="btn primary" id="copy">Copy note</button>
+          <button class="btn" id="save" hidden>Save .txt</button>
+          <button class="btn" id="newpt">New encounter</button>
+          <div class="status" id="notestatus" role="status" aria-live="polite"></div>
+        </div>
+        <p class="foot">Draft for clinician review. It becomes part of the record only after you verify and sign it.</p>
+      </section>
+    </div>
+  </div>
+
+  <section class="lib" id="library" hidden>
+    <div class="libhead">
+      <div>
+        <h2>Saved encounters</h2>
+        <p id="libmode"></p>
+      </div>
+      <div class="btns">
+        <button class="btn" id="libback">Back to current</button>
+        <button class="btn primary" id="libnew">New encounter</button>
+      </div>
+    </div>
+    <input class="fld search" id="libsearch" type="search" placeholder="Search by complaint, impression, bed or triage" aria-label="Search saved encounters" autocomplete="off">
+    <div class="card"><div class="liblist" id="liblist"></div></div>
+  </section>
+</div>
+
+<script>
+(function () {
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  function h(tag, attrs) {
+    var e = document.createElement(tag), a = attrs || {};
+    for (var k in a) {
+      var v = a[k];
+      if (v == null || v === false) continue;
+      if (k === 'class') e.className = v;
+      else if (k === 'text') e.textContent = v;
+      else if (k.indexOf('on') === 0) e.addEventListener(k.slice(2), v);
+      else e.setAttribute(k, v === true ? '' : v);
+    }
+    for (var i = 2; i < arguments.length; i++) {
+      var c = arguments[i];
+      if (c == null) continue;
+      if (Array.isArray(c)) c.forEach(function (x) { e.append(x.nodeType ? x : document.createTextNode(x)); });
+      else e.append(c.nodeType ? c : document.createTextNode(c));
+    }
+    return e;
+  }
+
+  /* ---------- Definitions ---------- */
+  var VITALS = [
+    { k: 'hr', l: 'HR', u: '/min', cl: 40, lo: 50, hi: 100, ch: 140, mode: 'numeric' },
+    { k: 'sbp', l: 'SBP', u: 'mmHg', cl: 90, lo: null, hi: 180, ch: null, mode: 'numeric', strict: true },
+    { k: 'dbp', l: 'DBP', u: 'mmHg', cl: null, lo: null, hi: 110, ch: null, mode: 'numeric' },
+    { k: 'rr', l: 'RR', u: '/min', cl: 8, lo: 10, hi: 22, ch: 30, mode: 'numeric' },
+    { k: 'spo2', l: 'SpO2', u: '%', cl: 90, lo: 94, hi: null, ch: null, mode: 'numeric', strict: true },
+    { k: 'temp', l: 'Temp', u: '°C', cl: 35, lo: 36, hi: 38, ch: 40, mode: 'decimal' },
+    { k: 'gcs', l: 'GCS', u: '/15', cl: 8, lo: 15, hi: null, ch: null, mode: 'numeric' },
+    { k: 'rbs', l: 'RBS', u: 'mg/dL', cl: 54, lo: 70, hi: 250, ch: 400, mode: 'numeric' }
+  ];
+
+  var SECTIONS = [
+    { t: 'Presenting complaint', f: [
+      { k: 'cc', l: 'Chief complaint', type: 'input', ph: 'Chest pain, 2 hours' },
+      { k: 'hpi', l: 'History of present illness', type: 'area', ph: 'Onset, character, radiation, associated symptoms, what has been tried' }
+    ] },
+    { t: 'Background', f: [
+      { k: 'pmh', l: 'Past history', type: 'area', ph: 'Comorbidities, surgeries' },
+      { k: 'meds', l: 'Medications', type: 'area', ph: 'Drug, dose, last taken' },
+      { k: 'allergies', l: 'Allergies', type: 'input', ph: 'No known drug allergies', chips: ['No known drug allergies'] }
+    ] },
+    { t: 'Primary survey', f: [
+      { k: 'pa', l: 'A · Airway', type: 'input', ph: 'Patent, speaking in sentences', chips: ['Patent, speaking in full sentences', 'Secretions, suctioned', 'At risk, GCS 8 or below'] },
+      { k: 'pb', l: 'B · Breathing', type: 'input', ph: 'Air entry, work of breathing', chips: ['Bilateral equal air entry', 'Tachypnoeic, accessory muscle use', 'Wheeze bilaterally'] },
+      { k: 'pc', l: 'C · Circulation', type: 'input', ph: 'Pulse, perfusion, access', chips: ['Warm peripheries, CRT under 2 s', 'Cold and clammy, CRT over 3 s', 'IV access ×2 secured'] },
+      { k: 'pd', l: 'D · Disability', type: 'input', ph: 'GCS, pupils, glucose', chips: ['GCS 15, pupils equal and reactive', 'No focal deficit', 'Pupils unequal'] },
+      { k: 'pe', l: 'E · Exposure', type: 'input', ph: 'Injuries, temperature', chips: ['Fully exposed, no external injury', 'Covered, temperature maintained'] }
+    ] },
+    { t: 'Examination', f: [
+      { k: 'ex_gen', l: 'General', type: 'input', ph: 'Alert, comfortable at rest', chips: ['Alert, comfortable at rest', 'Pallor', 'No icterus, cyanosis or clubbing'] },
+      { k: 'ex_cvs', l: 'Cardiovascular', type: 'input', ph: 'Heart sounds, JVP, oedema', chips: ['S1 S2 normal, no murmur', 'JVP not raised, no pedal oedema'] },
+      { k: 'ex_rs', l: 'Respiratory', type: 'input', ph: 'Air entry, added sounds', chips: ['Bilateral equal air entry, no added sounds', 'Bilateral crepitations', 'Rhonchi'] },
+      { k: 'ex_abd', l: 'Abdomen', type: 'input', ph: 'Tenderness, guarding, organomegaly', chips: ['Soft, non-tender, no guarding', 'Tenderness with guarding'] },
+      { k: 'ex_cns', l: 'Neurological', type: 'input', ph: 'Orientation, power, tone', chips: ['Oriented, power 5/5 in all limbs', 'Plantars flexor'] }
+    ] },
+    { t: 'Work-up and plan', f: [
+      { k: 'ix', l: 'Investigations', type: 'area', ph: 'ECG, labs, imaging, POCUS' },
+      { k: 'imp', l: 'Impression', type: 'area', ph: 'Working diagnosis, differentials' },
+      { k: 'plan', l: 'Treatment and plan', type: 'area', ph: 'Drug, dose, route, time; consults requested' },
+      { k: 'dispo', l: 'Disposition', type: 'input', ph: 'Where the patient is going', chips: ['Observation in ED', 'Admitted to ward', 'Admitted to ICU/HDU', 'Referred', 'Discharged', 'LAMA'] }
+    ] }
+  ];
+
+  var TEXT_KEYS = [];
+  SECTIONS.forEach(function (s) { s.f.forEach(function (f) { TEXT_KEYS.push(f.k); }); });
+  var SEXES = ['M', 'F', 'Other'];
+  var TRIAGES = ['Red', 'Orange', 'Yellow', 'Green'];
+  var ARRIVALS = ['Walk-in', '108 ambulance', 'Referred', 'Other'];
+  var TRIAGE_COLOR = { Red: '#C62F3B', Orange: '#D2690E', Yellow: '#E8BC1C', Green: '#23834F' };
+
+  /* ---------- State ---------- */
+  var LS_CUR = 'nubicor-scribe-current-v2';
+  var LS_ENC = 'nubicor-scribe-encounters-v2';
+  function newId() { return 'e' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+  function blank() {
+    var o = { time: new Date().toISOString(), age: '', sex: '', triage: '', bed: '', arrival: '', mlc: false, lang: 'auto', mix: true, spk: true, dec: null };
+    VITALS.forEach(function (v) { o[v.k] = ''; });
+    TEXT_KEYS.forEach(function (k) { o[k] = ''; });
+    return o;
+  }
+  var S = blank();
+  var cur = { id: newId(), rev: 0, created: Date.now() };
+  var rawEl = $('#raw');
+  try {
+    var saved = JSON.parse(localStorage.getItem(LS_CUR) || 'null');
+    if (saved && saved.id && saved.S) {
+      cur = { id: saved.id, rev: saved.rev || 0, created: saved.created || Date.now() };
+      S = Object.assign(blank(), saved.S);
+      rawEl.value = saved.raw || '';
+    }
+  } catch (e) {}
+
+  var E = {}, W = {}, secCounts = [];
+
+  function grow(el) {
+    if (el.tagName !== 'TEXTAREA' || el.id === 'raw') return;
+    el.style.height = 'auto';
+    el.style.height = el.scrollHeight + 2 + 'px';
+  }
+  function setVal(k, v) { S[k] = v; if (E[k]) { E[k].value = v; grow(E[k]); } }
+  function userEdit(k) { if (W[k]) W[k].classList.remove('ai'); }
+  function has(k) { return !!String(S[k] || '').trim(); }
+  function hasContent() {
+    if (rawEl.value.trim()) return true;
+    if (S.mlc || S.age || S.sex || S.triage || S.bed || S.arrival) return true;
+    return VITALS.some(function (v) { return S[v.k]; }) || TEXT_KEYS.some(has) || !!S.dec;
+  }
+
+  /* ---------- Build: patient strip ---------- */
+  function segBuild(id, items, key, cls) {
+    var box = $('#' + id);
+    items.forEach(function (it) {
+      var b = h('button', { type: 'button', 'aria-pressed': 'false', 'data-v': it, class: cls ? cls(it) : '' },
+        id === 'triage' ? h('span', { class: 'dot', style: 'background:' + TRIAGE_COLOR[it] }) : null, it);
+      b.addEventListener('click', function () { S[key] = S[key] === it ? '' : it; update(); });
+      box.append(b);
+    });
+  }
+  segBuild('sex', SEXES, 'sex');
+  segBuild('triage', TRIAGES, 'triage', function (t) { return 't-' + t.toLowerCase(); });
+
+  ['age', 'bed'].forEach(function (k) {
+    E[k] = $('#' + k);
+    E[k].addEventListener('input', function () { S[k] = E[k].value; update(); });
+  });
+  E.arrival = $('#arrival');
+  E.arrival.addEventListener('change', function () { S.arrival = E.arrival.value; update(); });
+  E.mlc = $('#mlc');
+  E.mlc.addEventListener('change', function () { S.mlc = E.mlc.checked; update(); });
+  [['auto', 'Auto'], ['ta', 'Tamil'], ['hi', 'Hindi'], ['en', 'English']].forEach(function (l) {
+    var b = h('button', { type: 'button', 'aria-pressed': 'false', 'data-v': l[0] }, l[1]);
+    b.addEventListener('click', function () { S.lang = l[0]; update(); });
+    $('#lang').append(b);
+  });
+  E.mix = $('#mix'); E.mix.addEventListener('change', function () { S.mix = E.mix.checked; update(); });
+  E.spk = $('#spk'); E.spk.addEventListener('change', function () { S.spk = E.spk.checked; update(); });
+
+  /* ---------- Build: vitals ---------- */
+  VITALS.forEach(function (v) {
+    var inp = h('input', { class: 'fld', id: 'v-' + v.k, inputmode: v.mode, autocomplete: 'off', 'aria-label': v.l + ' ' + v.u });
+    inp.addEventListener('input', function () { S[v.k] = inp.value.trim(); update(); });
+    E[v.k] = inp;
+    var flag = h('span', { class: 'flag', 'aria-hidden': 'true' });
+    var wrap = h('div', { class: 'v', 'data-k': v.k },
+      h('label', { for: 'v-' + v.k }, h('span', null, v.l), h('span', null, flag, h('span', { class: 'unit' }, ' ' + v.u))),
+      inp);
+    $('#vgrid').append(wrap);
+    W[v.k] = wrap;
+  });
+
+  function vitalSev(v) {
+    var raw = S[v.k];
+    if (raw === '' || isNaN(Number(raw))) return null;
+    var n = Number(raw);
+    if (v.cl != null && (v.strict ? n < v.cl : n <= v.cl)) return { s: 'crit', d: 'lo' };
+    if (v.ch != null && n >= v.ch) return { s: 'crit', d: 'hi' };
+    if (v.lo != null && n < v.lo) return { s: 'warn', d: 'lo' };
+    if (v.hi != null && n > v.hi) return { s: 'warn', d: 'hi' };
+    return null;
+  }
+
+  function derived() {
+    var hr = parseFloat(S.hr), sbp = parseFloat(S.sbp), dbp = parseFloat(S.dbp);
+    var rr = parseFloat(S.rr), gcs = parseFloat(S.gcs);
+    var out = [];
+    if (!isNaN(sbp) && !isNaN(dbp)) {
+      var map = Math.round((sbp + 2 * dbp) / 3);
+      out.push({ t: 'MAP ' + map, s: map < 65 ? 'crit' : '' });
+    }
+    if (!isNaN(hr) && !isNaN(sbp) && sbp > 0) {
+      var si = hr / sbp;
+      out.push({ t: 'Shock index ' + si.toFixed(2), s: si >= 1 ? 'crit' : si >= 0.9 ? 'warn' : '' });
+    }
+    var known = 0, pts = 0;
+    if (!isNaN(rr)) { known++; if (rr >= 22) pts++; }
+    if (!isNaN(sbp)) { known++; if (sbp <= 100) pts++; }
+    if (!isNaN(gcs)) { known++; if (gcs < 15) pts++; }
+    if (known) out.push({ t: 'qSOFA ' + pts + '/3' + (known < 3 ? ' (' + known + ' entered)' : ''), s: pts >= 2 ? 'crit' : pts === 1 ? 'warn' : '' });
+    return out;
+  }
+
+  /* ---------- Build: clinical sections ---------- */
+  function addChipText(k, text) {
+    var cur2 = (S[k] || '').trim();
+    setVal(k, cur2 ? cur2.replace(/[;.]\s*$/, '') + '; ' + text : text);
+    userEdit(k); update(); E[k].focus();
+  }
+  SECTIONS.forEach(function (sec, i) {
+    var count = h('span', { class: 'count' });
+    var body = h('div', { class: 'body' });
+    sec.f.forEach(function (f) {
+      var el = f.type === 'area'
+        ? h('textarea', { class: 'fld', id: 'f-' + f.k, rows: '2', placeholder: f.ph })
+        : h('input', { class: 'fld', id: 'f-' + f.k, placeholder: f.ph, autocomplete: 'off' });
+      el.addEventListener('input', function () { S[f.k] = el.value; grow(el); userEdit(f.k); update(); });
+      E[f.k] = el;
+      var wrap = h('div', { class: 'field' }, h('label', { for: 'f-' + f.k }, f.l), el);
+      if (f.chips) {
+        wrap.append(h('div', { class: 'chips below' }, f.chips.map(function (c) {
+          return h('button', { type: 'button', class: 'chip', onclick: function () { addChipText(f.k, c); } }, c);
+        })));
+      }
+      W[f.k] = wrap;
+      body.append(wrap);
+    });
+    $('#sections').append(h('details', { class: 'card sec', open: i < 3 }, h('summary', null, h('span', null, sec.t), count), body));
+    secCounts.push({ el: count, keys: sec.f.map(function (f) { return f.k; }) });
+  });
+
+  /* ---------- Note model ---------- */
+  function fmtTime(iso) {
+    try { return new Date(iso).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }); }
+    catch (e) { return iso; }
+  }
+
+  function model() {
+    var meta = [];
+    var demo = [S.age ? S.age + ' y' : '', S.sex].filter(Boolean).join(' ');
+    if (demo) meta.push({ t: demo });
+    if (S.bed) meta.push({ t: 'Bed ' + S.bed });
+    if (S.triage) meta.push({ t: 'Triage ' + S.triage.toUpperCase(), c: 't-' + S.triage.toLowerCase() });
+    if (S.arrival) meta.push({ t: S.arrival });
+    if (S.mlc) meta.push({ t: 'MLC', c: 't-red' });
+
+    var blocks = [];
+    function para(head, keys, labels) {
+      var lines = [];
+      keys.forEach(function (k, i) { if (has(k)) lines.push({ k: labels ? labels[i] : null, t: S[k].trim() }); });
+      if (lines.length) blocks.push({ h: head, lines: lines });
+    }
+    para('Chief complaint', ['cc']);
+    para('History of present illness', ['hpi']);
+    para('Past history', ['pmh']);
+    para('Medications', ['meds']);
+    blocks.push({ h: 'Allergies', lines: has('allergies') ? [{ t: S.allergies.trim() }] : [{ t: 'Not documented', nd: true }] });
+
+    var dv = derived(), mapTxt = '';
+    dv.forEach(function (x) { if (x.t.indexOf('MAP') === 0) mapTxt = x.t.replace('MAP ', ''); });
+    var bp = S.sbp || S.dbp ? (S.sbp || '?') + '/' + (S.dbp || '?') : '';
+    var vParts = [];
+    if (S.hr) vParts.push('HR ' + S.hr + ' /min');
+    if (bp) vParts.push('BP ' + bp + ' mmHg' + (mapTxt ? ' (MAP ' + mapTxt + ')' : ''));
+    if (S.rr) vParts.push('RR ' + S.rr + ' /min');
+    if (S.spo2) vParts.push('SpO2 ' + S.spo2 + '%');
+    if (S.temp) vParts.push('Temp ' + S.temp + ' °C');
+    if (S.gcs) vParts.push('GCS ' + S.gcs + '/15');
+    if (S.rbs) vParts.push('RBS ' + S.rbs + ' mg/dL');
+    if (vParts.length) {
+      var worst = '';
+      VITALS.forEach(function (v) { var r = vitalSev(v); if (r) { if (r.s === 'crit') worst = 'crit'; else if (!worst) worst = 'warn'; } });
+      var vLines = [{ t: vParts.join('  ·  '), mono: true, s: worst }];
+      var dTxt = dv.filter(function (x) { return x.t.indexOf('MAP') !== 0; }).map(function (x) { return x.t; });
+      if (dTxt.length) vLines.push({ t: dTxt.join('  ·  '), mono: true, s: dv.some(function (x) { return x.s === 'crit'; }) ? 'crit' : '' });
+      blocks.push({ h: 'Vitals', lines: vLines });
+    }
+
+    para('Primary survey', ['pa', 'pb', 'pc', 'pd', 'pe'], ['A', 'B', 'C', 'D', 'E']);
+    para('Examination', ['ex_gen', 'ex_cvs', 'ex_rs', 'ex_abd', 'ex_cns'], ['General', 'CVS', 'RS', 'Abdomen', 'CNS']);
+    para('Investigations', ['ix']);
+    para('Impression', ['imp']);
+    para('Treatment and plan', ['plan']);
+    para('Disposition', ['dispo']);
+
+    var checks = [
+      ['Complaint', has('cc')], ['History', has('hpi')], ['Allergies', has('allergies')],
+      ['Vitals', VITALS.some(function (v) { return S[v.k]; })],
+      ['Primary survey', ['pa', 'pb', 'pc', 'pd', 'pe'].some(has)],
+      ['Examination', ['ex_gen', 'ex_cvs', 'ex_rs', 'ex_abd', 'ex_cns'].some(has)],
+      ['Impression', has('imp')], ['Plan', has('plan')], ['Disposition', has('dispo')]
+    ];
+    return {
+      meta: meta, blocks: blocks,
+      anyContent: meta.length > 0 || blocks.some(function (b) { return b.h !== 'Allergies' || has('allergies'); }),
+      done: checks.filter(function (c) { return c[1]; }).length, total: checks.length,
+      missing: checks.filter(function (c) { return !c[1]; }).map(function (c) { return c[0]; })
+    };
+  }
+
+  function plainText(m) {
+    var L = ['EMERGENCY DEPARTMENT NOTE', fmtTime(S.time)];
+    if (m.meta.length) L.push(m.meta.map(function (x) { return x.t; }).join(' | '));
+    m.blocks.forEach(function (b) {
+      L.push('', b.h.toUpperCase());
+      b.lines.forEach(function (ln) { L.push((ln.k ? ln.k + ': ' : '') + ln.t); });
+    });
+    L.push('', 'Draft prepared with NScribe. To be verified and signed by the treating clinician.');
+    return L.join('\n');
+  }
+
+  function renderNote(m) {
+    var note = $('#note');
+    var kids = [h('p', { class: 'title' }, 'Emergency department note')];
+    var metaP = h('p', { class: 'meta' }, h('b', null, fmtTime(S.time)));
+    m.meta.forEach(function (x) { metaP.append('  ·  ', h('span', { class: x.c || '' }, x.t)); });
+    kids.push(metaP);
+    if (!m.anyContent) kids.push(h('p', { class: 'empty' }, 'Start typing on the left, or dictate and tap Structure. The note builds here as you go.'));
+    m.blocks.forEach(function (b) {
+      var nb = h('div', { class: 'nb' }, h('h3', null, b.h));
+      b.lines.forEach(function (ln) {
+        var p = h('p', { class: (ln.mono ? 'mono ' : '') + (ln.s || '') + (ln.nd ? ' nd' : '') });
+        if (ln.k) p.append(h('span', { class: 'k' }, ln.k));
+        p.append(ln.t);
+        nb.append(p);
+      });
+      kids.push(nb);
+    });
+    note.replaceChildren.apply(note, kids);
+  }
+
+  /* ---------- Persistence: encounters ---------- */
+  var Store = { mode: 'local', db: null, uid: null, unsub: null, firstSnap: false };
+  var items = [];          // saved encounters, newest first
+  var dirty = false, saving = false, again = false, timer = null;
+
+  function lsGetAll() { try { return JSON.parse(localStorage.getItem(LS_ENC) || '{}') || {}; } catch (e) { return {}; } }
+  function lsPutAll(o) { try { localStorage.setItem(LS_ENC, JSON.stringify(o)); } catch (e) {} }
+  function sortItems(a) { return a.sort(function (x, y) { return (y.rev || 0) - (x.rev || 0); }); }
+
+  function encDoc() {
+    var title = (S.cc || '').trim() || (S.imp || '').trim();
+    return {
+      kind: 'encounter', id: cur.id, rev: Date.now(), created: cur.created,
+      title: title.slice(0, 120), snippet: ((S.imp || '').trim() || (S.hpi || '').trim()).slice(0, 160),
+      triage: S.triage, mlc: !!S.mlc, age: S.age, sex: S.sex, bed: S.bed,
+      state: JSON.parse(JSON.stringify(S)), raw: rawEl.value
+    };
+  }
+
+  function setSaveState(kind, text) {
+    var el = $('#savestate'); el.dataset.s = kind; $('#savetext').textContent = text;
+  }
+  function clockShort() { return new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false }); }
+
+  function localSave(doc) {
+    var all = lsGetAll(); all[doc.id] = doc; lsPutAll(all);
+    if (Store.mode === 'local') { items = sortItems(Object.keys(all).map(function (k) { return all[k]; })); renderLibrary(); }
+  }
+
+  var chain = Promise.resolve();
+  function writeDoc(doc) {
+    var p;
+    if (Store.mode === 'db') {
+      p = Store.db.collection('data/users/' + Store.uid).doc(doc.id).set(doc).then(function () {
+        setSaveState('saved', 'Saved ' + clockShort());
+      }, function (err) {
+        if (err && err.code === 'quota_exceeded') { setSaveState('local', 'Storage full. Delete old encounters'); return; }
+        stopDb(); localSave(doc);
+        setSaveState('local', 'Saved on this device only');
+      });
+    } else {
+      localSave(doc);
+      setSaveState('local', 'Saved on this device ' + clockShort());
+      p = Promise.resolve();
+    }
+    return p.then(function () { if (cur.id === doc.id) { cur.rev = doc.rev; mirror(); } });
+  }
+  // The document is captured now; writes to the store run one at a time.
+  function flush() {
+    clearTimeout(timer); timer = null;
+    if (!dirty) return chain;
+    if (!hasContent()) { dirty = false; setSaveState('idle', 'Nothing to save yet'); return chain; }
+    dirty = false;
+    var doc = encDoc();
+    setSaveState('saving', 'Saving…');
+    chain = chain.then(function () { return writeDoc(doc); }).catch(function () {});
+    return chain;
+  }
+  function scheduleSave() {
+    dirty = true; clearTimeout(timer);
+    setSaveState('saving', 'Unsaved changes');
+    timer = setTimeout(flush, 1200);
+  }
+  function mirror() {
+    try { localStorage.setItem(LS_CUR, JSON.stringify({ id: cur.id, rev: cur.rev, created: cur.created, S: S, raw: rawEl.value })); } catch (e) {}
+  }
+
+  function loadEnc(enc, silent) {
+    S = Object.assign(blank(), enc.state || {});
+    cur = { id: enc.id, rev: enc.rev || 0, created: enc.created || Date.now() };
+    rawEl.value = enc.raw || '';
+    document.querySelectorAll('.field.ai').forEach(function (x) { x.classList.remove('ai'); });
+    $('#aistatus').textContent = '';
+    syncInputs(); update(true);
+    structureToggle();
+    setSaveState('saved', 'Saved ' + (enc.rev ? new Date(enc.rev).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false }) : ''));
+    if (!silent) showTab('note');
+  }
+  function startNew() {
+    var p = flush();
+    S = blank(); cur = { id: newId(), rev: 0, created: Date.now() };
+    rawEl.value = '';
+    document.querySelectorAll('.field.ai').forEach(function (x) { x.classList.remove('ai'); });
+    $('#aistatus').textContent = '';
+    syncInputs(); update(true); structureToggle();
+    setSaveState('idle', 'Nothing to save yet');
+    return p;
+  }
+  function removeEnc(id) {
+    var wasCur = id === cur.id;
+    var p;
+    if (Store.mode === 'db') p = Store.db.collection('data/users/' + Store.uid).doc(id).delete().catch(function () {});
+    else { var all = lsGetAll(); delete all[id]; lsPutAll(all); items = sortItems(Object.keys(all).map(function (k) { return all[k]; })); renderLibrary(); p = Promise.resolve(); }
+    if (wasCur) { dirty = false; clearTimeout(timer); S = blank(); cur = { id: newId(), rev: 0, created: Date.now() }; rawEl.value = ''; syncInputs(); update(true); structureToggle(); setSaveState('idle', 'Nothing to save yet'); }
+    return p;
+  }
+
+  /* ---------- Library view ---------- */
+  var query = '';
+  function shortDate(ms) {
+    try { return new Date(ms).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false }); } catch (e) { return ''; }
+  }
+  function renderLibrary() {
+    var list = $('#liblist');
+    var q = query.trim().toLowerCase();
+    var shown = items.filter(function (e) {
+      if (!q) return true;
+      return [e.title, e.snippet, e.bed, e.triage, e.age, e.sex].join(' ').toLowerCase().indexOf(q) >= 0;
+    });
+    $('#savedbtn').textContent = 'Saved encounters' + (items.length ? ' · ' + items.length : '');
+    $('#tab-saved').textContent = items.length ? 'Saved · ' + items.length : 'Saved';
+    $('#libmode').textContent = Store.mode === 'db'
+      ? 'Stored on this device.'
+      : 'Stored in this browser only. Clearing site data removes them.';
+    if (!shown.length) {
+      list.replaceChildren(h('div', { class: 'libempty' },
+        h('b', null, items.length ? 'Nothing matches that search' : 'No saved encounters yet'),
+        items.length ? 'Try a different word.' : 'Encounters save by themselves a moment after you start typing.'));
+      return;
+    }
+    list.replaceChildren.apply(list, shown.map(function (e) {
+      var isNow = e.id === cur.id;
+      var meta = [[e.age ? e.age + ' y' : '', e.sex].filter(Boolean).join(' '), e.bed ? 'Bed ' + e.bed : '', e.triage ? e.triage : '', e.mlc ? 'MLC' : '', shortDate(e.rev)].filter(Boolean).join('  ·  ');
+      var del = h('button', { type: 'button', class: 'del', 'aria-label': 'Delete encounter' }, 'Delete');
+      var armed = false;
+      del.addEventListener('click', function () {
+        if (!armed) { armed = true; del.classList.add('armed'); del.textContent = 'Confirm'; setTimeout(function () { armed = false; del.classList.remove('armed'); del.textContent = 'Delete'; }, 3000); return; }
+        removeEnc(e.id);
+      });
+      var open = h('button', { type: 'button', class: 'open', onclick: function () {
+        if (isNow) { showTab('note'); return; }
+        flush().then(function () { loadEnc(e); });
+      } },
+        h('span', { class: 'ttl' },
+          h('span', { class: 'dot', style: 'background:' + (TRIAGE_COLOR[e.triage] || 'var(--line)') }),
+          h('span', { class: 't' }, (e.title || '').trim() || 'Untitled encounter'),
+          isNow ? h('span', { class: 'now' }, 'Open') : null),
+        h('span', { class: 'sm' }, meta),
+        e.snippet ? h('span', { class: 'sn' }, e.snippet) : null);
+      return h('div', { class: 'item' }, open, del);
+    }));
+  }
+  $('#libsearch').addEventListener('input', function (ev) { query = ev.target.value; renderLibrary(); });
+  $('#libback').addEventListener('click', function () { showTab('capture'); });
+  $('#libnew').addEventListener('click', function () { startNew().then(function () { showTab('capture'); }); });
+  $('#newpt').addEventListener('click', function () {
+    startNew().then(function () { flash($('#notestatus'), 'Previous encounter is in Saved.'); });
+    showTab('capture');
+  });
+
+  /* ---------- Db backend (when available) ---------- */
+  function stopDb() {
+    if (Store.unsub) { try { Store.unsub(); } catch (e) {} Store.unsub = null; }
+    Store.mode = 'local'; Store.db = null;
+    var all = lsGetAll(); items = sortItems(Object.keys(all).map(function (k) { return all[k]; })); renderLibrary();
+  }
+  function startDb(db, uid) {
+    Store.db = db; Store.uid = uid; Store.mode = 'db';
+    // move any device-only encounters into the account once
+    var all = lsGetAll(), ids = Object.keys(all);
+    var coll = db.collection('data/users/' + uid);
+    var chain = Promise.resolve();
+    ids.forEach(function (id) {
+      chain = chain.then(function () { return coll.doc(id).set(all[id]); }).then(function () {
+        var a2 = lsGetAll(); delete a2[id]; lsPutAll(a2);
+      }, function () {});
+    });
+    Store.unsub = coll.orderBy('rev', 'desc').limit(300).onSnapshot(function (snap) {
+      items = snap.docs.map(function (d) { return d.data(); }).filter(function (d) { return d && d.kind === 'encounter'; });
+      renderLibrary();
+      if (!Store.firstSnap) {
+        Store.firstSnap = true;
+        var mine = items.filter(function (e) { return e.id === cur.id; })[0];
+        if (mine && !dirty && (mine.rev || 0) > (cur.rev || 0)) loadEnc(mine, true);
+        else if (!mine && hasContent()) { dirty = true; flush(); }
+        else if (mine) setSaveState('saved', 'Saved ' + new Date(mine.rev).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false }));
+      }
+    }, function () { stopDb(); setSaveState('local', 'Saved on this device only'); });
+  }
+
+  /* ---------- Update / sync ---------- */
+  function update(silent) {
+    document.querySelectorAll('#sex button').forEach(function (b) { b.setAttribute('aria-pressed', String(S.sex === b.dataset.v)); });
+    document.querySelectorAll('#triage button').forEach(function (b) { b.setAttribute('aria-pressed', String(S.triage === b.dataset.v)); });
+    document.querySelectorAll('#lang button').forEach(function (b) { b.setAttribute('aria-pressed', String((S.lang || 'auto') === b.dataset.v)); });
+    renderDecode();
+    VITALS.forEach(function (v) {
+      var r = vitalSev(v), w = W[v.k];
+      if (r) { w.dataset.sev = r.s; $('.flag', w).textContent = (r.s === 'crit' ? '!' : '') + (r.d === 'hi' ? '↑' : '↓'); }
+      else { delete w.dataset.sev; $('.flag', w).textContent = ''; }
+    });
+    var d = $('#derived');
+    d.replaceChildren.apply(d, derived().map(function (x) { return h('span', { class: 'pill ' + x.s }, x.t); }));
+    secCounts.forEach(function (sc) { sc.el.textContent = sc.keys.filter(has).length + '/' + sc.keys.length; });
+    var m = model();
+    renderNote(m);
+    $('#progbar').style.width = Math.round(m.done / m.total * 100) + '%';
+    $('#progtext').textContent = m.done + ' of ' + m.total + ' sections';
+    var miss = $('#missing');
+    if (m.missing.length && m.anyContent) {
+      miss.hidden = false;
+      miss.replaceChildren.apply(miss, ['Not yet documented'].concat(m.missing.map(function (x) { return h('span', { class: 'pill' }, x); })));
+    } else miss.hidden = true;
+    mirror();
+    if (!silent) scheduleSave();
+    renderLibrary();
+  }
+
+  function syncInputs() {
+    E.age.value = S.age; E.bed.value = S.bed; E.arrival.value = S.arrival; E.mlc.checked = !!S.mlc;
+    E.mix.checked = S.mix !== false; E.spk.checked = S.spk !== false;
+    VITALS.forEach(function (v) { E[v.k].value = S[v.k]; });
+    TEXT_KEYS.forEach(function (k) { E[k].value = S[k]; });
+    requestAnimationFrame(function () { TEXT_KEYS.forEach(function (k) { grow(E[k]); }); });
+  }
+
+  /* ---------- Clock, tabs, copy ---------- */
+  function tick() {
+    $('#clock').textContent = new Date().toLocaleString('en-GB', { weekday: 'short', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false });
+  }
+  tick(); setInterval(tick, 30000);
+
+  var view = 'capture';
+  function showTab(name) {
+    view = name;
+    var saved = name === 'saved';
+    $('#grid').hidden = saved; $('#library').hidden = !saved;
+    $('#pane-capture').dataset.active = String(name === 'capture' || saved);
+    $('#pane-note').dataset.active = String(name === 'note');
+    ['capture', 'note', 'saved'].forEach(function (t) { $('#tab-' + t).setAttribute('aria-selected', String(name === t)); });
+    $('#savedbtn').setAttribute('aria-pressed', String(saved));
+    if (saved) renderLibrary();
+    window.scrollTo(0, 0);
+  }
+  document.querySelectorAll('.tabs button').forEach(function (b) { b.addEventListener('click', function () { showTab(b.dataset.tab); }); });
+  $('#savedbtn').addEventListener('click', function () { showTab(view === 'saved' ? 'capture' : 'saved'); });
+
+  function flash(el, msg, err) {
+    el.textContent = msg; el.classList.toggle('err', !!err);
+    clearTimeout(el._t); el._t = setTimeout(function () { el.textContent = ''; el.classList.remove('err'); }, 3500);
+  }
+  $('#copy').addEventListener('click', function () {
+    var txt = plainText(model()), st = $('#notestatus');
+    function fallback() {
+      var r = document.createRange(); r.selectNodeContents($('#note'));
+      var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+      flash(st, 'Note selected. Press copy on your keyboard.');
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(function () { flash(st, 'Note copied.'); }, fallback);
+    else fallback();
+  });
+  $('#clearraw').addEventListener('click', function () { rawEl.value = ''; structureToggle(); update(); rawEl.focus(); });
+
+  /* ---------- Services: file download and the Claude proxy ---------- */
+  var LS_CODE = 'nubicor-scribe-access-code';
+  function accessCode() { try { return localStorage.getItem(LS_CODE) || ''; } catch (e) { return ''; } }
+
+  var downloads = {
+    save: function (o) {
+      var url = URL.createObjectURL(new Blob([o.data], { type: 'text/plain;charset=utf-8' }));
+      var a = h('a', { href: url, download: o.filename });
+      document.body.append(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+      return Promise.resolve();
+    }
+  };
+
+  var sample = {
+    json: function (prompt, opts) {
+      return fetch('/api/sample', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Access-Code': accessCode() },
+        body: JSON.stringify({ prompt: prompt }),
+        signal: opts && opts.signal
+      }).then(function (res) {
+        if (res.status === 401) {
+          var c = window.prompt('Enter the access code for this NScribe server');
+          if (c) { try { localStorage.setItem(LS_CODE, c.trim()); } catch (e) {} }
+          throw { code: 'not_granted' };
+        }
+        if (res.status === 429) throw { code: 'rate_limited' };
+        return res.json().then(function (j) {
+          if (!res.ok) throw { code: j && j.error || 'failed' };
+          return j.result;
+        }, function () { throw { code: 'invalid_json' }; });
+      }, function (e) {
+        throw { code: e && e.name === 'AbortError' ? 'cancelled' : 'network' };
+      });
+    }
+  };
+
+  var dl = downloads;
+  (function () {
+    var b = $('#save'); b.hidden = false;
+    b.addEventListener('click', function () {
+      var d = new Date(S.time), p = function (n) { return String(n).padStart(2, '0'); };
+      var name = 'ED-note-' + d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + '-' + p(d.getHours()) + p(d.getMinutes()) + '.txt';
+      dl.save({ filename: name, data: plainText(model()) }).then(
+        function () { flash($('#notestatus'), 'Saved.'); },
+        function () { flash($('#notestatus'), 'Saving is not available here. Use Copy note.', true); }
+      );
+    });
+  })();
+
+  var structureBtn = $('#structure');
+  function structureToggle() { var off = !rawEl.value.trim(); structureBtn.disabled = off; $('#decode').disabled = off; }
+  rawEl.addEventListener('input', function () { structureToggle(); update(); });
+
+  var AI_KEYS = ['age', 'sex', 'arrival', 'mlc', 'triage', 'hr', 'sbp', 'dbp', 'rr', 'spo2', 'temp', 'gcs', 'rbs'].concat(TEXT_KEYS);
+
+  /* ---------- Language settings ---------- */
+  function langLines() {
+    var main = { auto: 'Detect the language yourself.', ta: 'The main language is Tamil.', hi: 'The main language is Hindi.', en: 'The text is in English.' }[S.lang || 'auto'];
+    return [
+      'Language setting: ' + main,
+      S.mix !== false
+        ? 'Mixed-language mode is ON: the text may switch between Tamil, Hindi and English, even inside one sentence, and may be in native script or romanised (Tanglish, Hinglish). Read each phrase in its own language.'
+        : 'Mixed-language mode is OFF: treat the text as one language.',
+      S.spk !== false
+        ? 'The text may be a conversation between doctor, patient and attender. When it is clear, say who reported each item.'
+        : 'Do not attribute items to speakers.'
+    ];
+  }
+
+  function decodePrompt(text) {
+    return ['You help an emergency doctor in Tamil Nadu. Read a patient conversation or handover and extract what the patient is complaining of, written in English.']
+      .concat(langLines(), [
+        'The text may come from voice typing and contain mishearings, split words or the wrong script. When context makes the intended word obvious, use it and set check to true; otherwise put the phrase in unclear. Rules: report only what was said. Never add a diagnosis and never infer a symptom. Turn lay words into clinical English (for example நெஞ்சு வலி or seene mein dard = chest pain; மூச்சு திணறல் or saans phoolna = breathlessness). Turn spoken durations (rendu naal, 2 din se, ரெண்டு மணி நேரமா) into a number with a unit. Keep each "said" field as the original words exactly as spoken or written, in the same script. If a word has more than one plausible meaning (for example ghabrahat, chakkar, gas, weakness, BP, sugar), give your best English term and set check to true.',
+        'Reply with only one JSON object of this shape, where every item is {"en": string, "duration": string, "said": string, "by": "patient" or "attender" or "doctor" or "", "check": boolean}:',
+        '{"languages": ["Tamil","Hindi","English"], "summary": "one or two plain English sentences", "complaints": [item], "symptoms": [item], "negatives": [item], "details": [item], "unclear": [{"said": string, "note": string}]}',
+        'complaints are the reasons the patient came, most important first, with duration where stated. symptoms are other positive symptoms. negatives are symptoms the speakers said are absent: put only the symptom name in "en" (for example "Fever"). details are onset, triggers, relieving factors, medicines taken and relevant past illness. unclear are phrases you could not interpret. Use an empty array when there is nothing. Leave duration empty when not stated.',
+        '',
+        'Text:',
+        text
+      ]).join('\n');
+  }
+
+  function fillPrompt(text) {
+    return [
+      'You are a scribe in an emergency department of an Indian government teaching hospital. Turn the clinician\'s dictation into a structured note. The dictation may be in Tamil, Hindi, English or a mix; write every field in English.'
+    ].concat(langLines(), [
+      'The dictation may come from voice typing and contain mishearings. Where a word is unclear, leave that field empty instead of guessing. Rules: use only what the dictation states. Never infer, add or correct clinical facts. Leave a field as an empty string when it is not stated. Keep standard clinical abbreviations and write concise note-style phrases, not full sentences. Turn lay words into clinical terms. Convert temperature to Celsius and glucose to mg/dL if given in other units. Put each primary survey letter (A to E) and each examination system in its own field. Do not copy vitals into the free-text fields.',
+      'Reply with only one JSON object using exactly these keys:',
+      'age (digits only), sex ("M", "F", "Other" or ""), arrival ("Walk-in", "108 ambulance", "Referred", "Other" or ""), mlc (true only if medico-legal case is stated), triage ("Red", "Orange", "Yellow", "Green" or ""),',
+      'hr, sbp, dbp, rr, spo2, temp, gcs, rbs (numbers as strings),',
+      'cc (chief complaint), hpi, pmh (past history), meds, allergies,',
+      'pa, pb, pc, pd, pe (primary survey A to E), ex_gen, ex_cvs, ex_rs, ex_abd, ex_cns (examination),',
+      'ix (investigations), imp (impression), plan (treatment and plan), dispo (disposition).',
+      '',
+      'Dictation:',
+      text
+    ]).join('\n');
+  }
+
+  /* ---------- Decoded history panel ---------- */
+  var GROUPS = [['complaints', 'Presenting complaints'], ['symptoms', 'Associated symptoms'], ['negatives', 'Denied'], ['details', 'Other history']];
+  var BY = { patient: 'Patient', attender: 'Attender', doctor: 'Observed' };
+
+  function cleanItems(a) {
+    return (Array.isArray(a) ? a : []).map(function (x) {
+      if (!x || typeof x !== 'object') return null;
+      var en = String(x.en || '').trim();
+      if (!en) return null;
+      var by = String(x.by || '').toLowerCase();
+      return { en: en.slice(0, 160), duration: String(x.duration || '').trim().slice(0, 60), said: String(x.said || '').trim().slice(0, 200), by: BY[by] ? by : '', check: x.check === true };
+    }).filter(Boolean).slice(0, 20);
+  }
+  function normalizeDec(r) {
+    var d = {
+      at: Date.now(),
+      languages: (Array.isArray(r.languages) ? r.languages : []).map(String).slice(0, 4),
+      summary: String(r.summary || '').trim().slice(0, 400),
+      complaints: cleanItems(r.complaints), symptoms: cleanItems(r.symptoms),
+      negatives: cleanItems(r.negatives), details: cleanItems(r.details),
+      unclear: (Array.isArray(r.unclear) ? r.unclear : []).map(function (u) {
+        return u && typeof u === 'object' ? { said: String(u.said || '').trim().slice(0, 200), note: String(u.note || '').trim().slice(0, 240) } : null;
+      }).filter(function (u) { return u && (u.said || u.note); }).slice(0, 10),
+      sel: {}, done: {}, added: false
+    };
+    GROUPS.forEach(function (g) { d[g[0]].forEach(function (x, i) { d.sel[g[0] + i] = !x.check; }); });
+    return d;
+  }
+
+  function renderDecode() {
+    var card = $('#deccard'), d = S.dec;
+    if (!d) { card.hidden = true; return; }
+    card.hidden = false;
+    $('#declangs').textContent = (d.languages || []).join(' + ');
+    var sum = $('#decsum'); sum.textContent = d.summary || ''; sum.hidden = !d.summary;
+    var kids = [], any = false;
+    GROUPS.forEach(function (g) {
+      var arr = d[g[0]] || [];
+      if (!arr.length) return;
+      kids.push(h('div', { class: 'dgroup' }, h('h3', null, g[1]), arr.map(function (x, i) {
+        var key = g[0] + i;
+        var cb = h('input', { type: 'checkbox', id: 'dc-' + key });
+        var dn = !!(d.done && d.done[key]);
+        cb.checked = dn || !!(d.sel && d.sel[key]); cb.disabled = dn;
+        if (cb.checked && !dn) any = true;
+        cb.addEventListener('change', function () { d.sel[key] = cb.checked; $('#decadd').disabled = !anySelected(d); mirror(); scheduleSave(); });
+        return h('label', { class: 'drow', for: 'dc-' + key }, cb,
+          h('span', { class: 'dtxt' },
+            h('span', { class: 'den' }, x.en,
+              x.duration ? h('span', { class: 'tag' }, x.duration) : null,
+              x.by ? h('span', { class: 'tag' }, BY[x.by]) : null,
+              x.check ? h('span', { class: 'tag chk' }, 'confirm') : null),
+            x.said ? h('span', { class: 'dsaid' }, x.said) : null));
+      })));
+    });
+    if (d.unclear && d.unclear.length) {
+      kids.push(h('div', { class: 'dgroup' }, h('h3', null, 'Needs your confirmation'), d.unclear.map(function (u) {
+        return h('div', { class: 'drow plain' }, h('span', { class: 'dtxt' },
+          u.said ? h('span', { class: 'dsaid' }, u.said) : null,
+          u.note ? h('span', { class: 'den' }, u.note) : null));
+      })));
+    }
+    if (!kids.length) kids.push(h('p', { class: 'hint' }, 'No complaints or symptoms were found in that text.'));
+    var box = $('#decgroups'); box.replaceChildren.apply(box, kids);
+    var add = $('#decadd');
+    var anyDone = d.done && Object.keys(d.done).length;
+    add.textContent = (any || !anyDone) ? 'Add selected to note' : 'Added to note';
+    add.disabled = !any;
+  }
+  function anySelected(d) { return GROUPS.some(function (g) { return d[g[0]].some(function (x, i) { return d.sel[g[0] + i] && !(d.done && d.done[g[0] + i]); }); }); }
+
+  function addDecoded() {
+    var d = S.dec; if (!d) return;
+    d.done = d.done || {};
+    function pick(g) { return d[g].filter(function (x, i) { return d.sel[g + i] && !d.done[g + i]; }); }
+    var cc = pick('complaints').map(function (x) { return x.en + (x.duration ? ' × ' + x.duration : ''); });
+    var sym = pick('symptoms').map(function (x) { return x.en; });
+    var neg = pick('negatives').map(function (x) { return x.en; });
+    var det = pick('details').map(function (x) { return x.en; });
+    var n = cc.length + sym.length + neg.length + det.length;
+    if (!n) return;
+    var parts = [];
+    if (sym.length) parts.push('Associated symptoms: ' + sym.join(', ') + '.');
+    if (neg.length) parts.push('Denies: ' + neg.join(', ') + '.');
+    if (det.length) parts.push(det.join('; ') + '.');
+    if (cc.length) { var c0 = (S.cc || '').trim(); setVal('cc', c0 ? c0.replace(/[;.]\s*$/, '') + '; ' + cc.join('; ') : cc.join('; ')); W.cc.classList.add('ai'); }
+    if (parts.length) { var h0 = (S.hpi || '').trim(); setVal('hpi', h0 ? h0 + '\n' + parts.join(' ') : parts.join(' ')); W.hpi.classList.add('ai'); }
+    GROUPS.forEach(function (g) { d[g[0]].forEach(function (x, i) { if (d.sel[g[0] + i]) d.done[g[0] + i] = true; }); });
+    update();
+    flash($('#decstatus'), 'Added ' + n + ' items to chief complaint and history.');
+  }
+  $('#decadd').addEventListener('click', function () { addDecoded(); });
+  $('#decclear').addEventListener('click', function () { S.dec = null; update(); });
+
+  /* ---------- Transcript file (from a recorder app) ---------- */
+  function cleanTranscript(t) {
+    return t.replace(/^﻿/, '').replace(/^WEBVTT.*$/gm, '')
+      .replace(/^\d{1,5}\s*$/gm, '')
+      .replace(/^\d{1,2}:\d{2}(:\d{2})?([.,]\d+)?\s*-->.*$/gm, '')
+      .replace(/^\s*\[\d{1,2}:\d{2}(:\d{2})?\]\s*/gm, '')
+      .replace(/<[^>]+>/g, '').replace(/\n{3,}/g, '\n\n').trim();
+  }
+  $('#loadfile').addEventListener('click', function () { $('#filein').click(); });
+  $('#filein').addEventListener('change', function (ev) {
+    var f = ev.target.files && ev.target.files[0], st = $('#aistatus');
+    if (!f) return;
+    if (f.size > 300000) { st.classList.add('err'); st.textContent = 'That file is too large. Use a transcript under 300 KB.'; ev.target.value = ''; return; }
+    var fr = new FileReader();
+    fr.onload = function () {
+      var t = cleanTranscript(String(fr.result || ''));
+      if (!t) { st.classList.add('err'); st.textContent = 'No readable text in that file.'; return; }
+      rawEl.value = rawEl.value.trim() ? rawEl.value.trim() + '\n\n' + t : t;
+      st.classList.remove('err'); st.textContent = 'Loaded ' + f.name + '. Tap Decode conversation.';
+      structureToggle(); update();
+    };
+    fr.onerror = function () { st.classList.add('err'); st.textContent = 'That file could not be read.'; };
+    fr.readAsText(f);
+    ev.target.value = '';
+  });
+
+  /* ---------- Claude calls ---------- */
+  (function () {
+    var decodeBtn = $('#decode'), fillBtn = structureBtn, stop = $('#stop'), st = $('#aistatus'), ctl = null;
+    decodeBtn.hidden = false; fillBtn.hidden = false; structureToggle();
+    stop.addEventListener('click', function () { if (ctl) ctl.abort(); });
+
+    function begin(msg) {
+      ctl = new AbortController();
+      decodeBtn.disabled = true; fillBtn.disabled = true; stop.hidden = false;
+      st.classList.remove('err'); st.textContent = msg;
+      return ctl.signal;
+    }
+    function end() { ctl = null; stop.hidden = true; structureToggle(); }
+    function fail(e) {
+      var c = e && e.code;
+      if (c === 'cancelled') { st.textContent = 'Stopped.'; return; }
+      st.classList.add('err');
+      st.textContent = c === 'not_granted' ? 'Access code needed. Tap the button again and enter it.'
+        : c === 'rate_limited' ? 'Too many requests right now. Try again in a minute.'
+        : c === 'invalid_json' ? 'Claude\'s reply could not be read. Tap the button to try again.'
+        : c === 'not_configured' ? 'The server has no Anthropic API key set.'
+        : 'That did not work. Tap the button to try again.';
+    }
+
+    decodeBtn.addEventListener('click', function () {
+      var text = rawEl.value.trim(); if (!text) return;
+      var signal = begin('Decoding…');
+      sample.json(decodePrompt(text), { signal: signal, cache: false }).then(function (r) {
+        if (!r || typeof r !== 'object') throw { code: 'invalid_json' };
+        S.dec = normalizeDec(r);
+        update();
+        var d = S.dec, n = d.complaints.length + d.symptoms.length + d.negatives.length + d.details.length;
+        addDecoded();
+        st.textContent = n ? 'Decoded ' + n + ' items and filled Chief complaint and History. Items marked confirm are unticked: tick them and tap Add to include them.' : 'Nothing clinical found in that text.';
+        var card = $('#deccard'); if (card.scrollIntoView) card.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }).catch(fail).then(end);
+    });
+
+    fillBtn.addEventListener('click', function () {
+      var text = rawEl.value.trim(); if (!text) return;
+      var signal = begin('Thinking…');
+      sample.json(fillPrompt(text), { signal: signal, cache: false }).then(function (r) {
+        if (!r || typeof r !== 'object') throw { code: 'invalid_json' };
+        var n = 0;
+        AI_KEYS.forEach(function (k) {
+          var v = r[k];
+          if (v == null || v === '' || v === false) return;
+          if (k === 'mlc') { S.mlc = true; E.mlc.checked = true; n++; return; }
+          v = String(v).trim();
+          if (!v) return;
+          if (k === 'sex') { v = v.toUpperCase() === 'M' ? 'M' : v.toUpperCase() === 'F' ? 'F' : v.toLowerCase() === 'other' ? 'Other' : ''; if (!v) return; }
+          if (k === 'triage') { v = v.charAt(0).toUpperCase() + v.slice(1).toLowerCase(); if (TRIAGES.indexOf(v) < 0) return; }
+          if (k === 'arrival') { if (ARRIVALS.indexOf(v) < 0) return; }
+          if (k === 'age') { v = v.replace(/[^\d]/g, ''); if (!v) return; }
+          S[k] = v; n++;
+          if (W[k] && TEXT_KEYS.indexOf(k) >= 0) W[k].classList.add('ai');
+        });
+        syncInputs(); update();
+        st.textContent = n ? 'Filled ' + n + ' fields. Fields marked in coral came from Claude; check each against the patient.' : 'Nothing extractable in that text.';
+        if (n) document.querySelectorAll('details.sec').forEach(function (d) { d.open = true; });
+      }).catch(fail).then(end);
+    });
+  })();
+
+  // Save quickly if the page is being hidden or closed
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') flush(); });
+
+  /* ---------- Go ---------- */
+  (function initLocalList() {
+    var all = lsGetAll(); items = sortItems(Object.keys(all).map(function (k) { return all[k]; }));
+  })();
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(function () {});
+  syncInputs();
+  update(true);
+  structureToggle();
+  if (hasContent()) setSaveState('local', 'Restored on this device');
+})();
+</script>
+
+</body></html>

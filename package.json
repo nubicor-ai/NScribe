@@ -1,0 +1,8 @@
+{
+  "name": "nscribe",
+  "version": "1.0.0",
+  "description": "ED scribe: Tamil, Hindi and English conversation to structured emergency note",
+  "private": true,
+  "scripts": { "start": "node server/index.js" },
+  "engines": { "node": ">=18" }
+}
