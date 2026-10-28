@@ -21,3 +21,13 @@ write(d + '/bursts.wav', (speech(4) + quiet(2)) * 12)            # 4 s speech, 2
 write(d + '/continuous-70s.wav', speech(70))                      # one long dictation with no pause
 write(d + '/silence.wav', quiet(20))                              # empty audio
 write(d + '/noise.wav', quiet(20, 0.006))                         # steady low background noise
+# Tiny ONNX model (y = x + x) used to prove the bundled WASM runtime works offline. Needs `pip install onnx`.
+try:
+    import onnx
+    from onnx import helper, TensorProto
+    x = helper.make_tensor_value_info('x', TensorProto.FLOAT, [1, 3]); y = helper.make_tensor_value_info('y', TensorProto.FLOAT, [1, 3])
+    g = helper.make_graph([helper.make_node('Add', ['x', 'x'], ['y'])], 'g', [x], [y])
+    m = helper.make_model(g, opset_imports=[helper.make_opsetid('', 13)]); m.ir_version = 8
+    onnx.save(m, d + '/double.onnx')
+except ImportError:
+    print('onnx not installed: the runtime test will be skipped/fail')

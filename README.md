@@ -27,7 +27,8 @@ download of the speech model, it needs **no internet, no API keys and no server*
 npm install          # only needed to refresh vendored files or run tests
 npm start            # http://localhost:8080
 npm run build        # regenerates public/sw.js (the offline file list) after you change anything in public/
-npm test             # end-to-end tests (needs Playwright/Chromium)
+python3 tests/make-audio.py tests/audio   # once: synthetic audio + tiny ONNX test model
+npm test             # 17 end-to-end tests (needs Playwright/Chromium)
 ```
 
 Deploy: Netlify > Add new site > Deploy manually > drag the **`public`** folder in (or connect the Git repo; `netlify.toml`
