@@ -60,15 +60,15 @@ function durations(s) {
 
 // [english term, english phrases, Tamil phrases, Hindi phrases, needs confirmation]
 var SYMPTOMS = [
-  ['Chest pain', ['chest pain', 'chest discomfort', 'chest tightness', 'chest heaviness', 'chest pressure'], ['nenju vali', 'nenjuvali', 'nenju valikkudhu', 'நெஞ்சு வலி', 'நெஞ்சுவலி', 'நெஞ்சில் வலி'], ['seene mein dard', 'seene me dard', 'chhati mein dard', 'सीने में दर्द', 'सीने मे दर्द', 'छाती में दर्द']],
-  ['Breathlessness', ['breathless', 'breathlessness', 'shortness of breath', 'short of breath', 'dyspnea', 'dyspnoea', 'difficulty breathing', 'breathing difficulty', 'sob'], ['moochu thinaral', 'moochu thinaruthu', 'moochu vaangudhu', 'moochu muttudhu', 'மூச்சு திணறல்', 'மூச்சுத் திணறல்', 'மூச்சு வாங்குது', 'மூச்சு விட'], ['saans phoolna', 'saans phool', 'saans bhi phool', 'saans lene mein', 'saans nahi aa', 'dum phoolna', 'सांस फूल', 'सांस लेने में', 'दम फूल']],
+  ['Chest pain', ['chest pain', 'chest discomfort', 'chest tightness', 'chest heaviness', 'chest pressure', 'pain in the chest', 'pain in my chest', 'pain in chest', 'chest hurts', 'chest is paining', 'pain over the chest', 'pain in left chest'], ['nenju vali', 'nenjuvali', 'nenju valikkudhu', 'நெஞ்சு வலி', 'நெஞ்சுவலி', 'நெஞ்சில் வலி'], ['seene mein dard', 'seene me dard', 'chhati mein dard', 'सीने में दर्द', 'सीने मे दर्द', 'छाती में दर्द']],
+  ['Breathlessness', ['breathless', 'breathlessness', 'shortness of breath', 'short of breath', 'dyspnea', 'dyspnoea', 'difficulty breathing', 'difficulty in breathing', 'trouble breathing', 'cannot breathe', 'can\'t breathe', 'breathing problem', 'out of breath', 'breathing difficulty', 'sob'], ['moochu thinaral', 'moochu thinaruthu', 'moochu vaangudhu', 'moochu muttudhu', 'மூச்சு திணறல்', 'மூச்சுத் திணறல்', 'மூச்சு வாங்குது', 'மூச்சு விட'], ['saans phoolna', 'saans phool', 'saans bhi phool', 'saans lene mein', 'saans nahi aa', 'dum phoolna', 'सांस फूल', 'सांस लेने में', 'दम फूल']],
   ['Sweating', ['sweating', 'diaphoresis', 'sweaty', 'sweats'], ['viyarthu', 'viyarkudhu', 'viyarvai', 'வியர்', 'வேர்'], ['paseena', 'pasina', 'पसीना']],
   ['Fever', ['fever', 'pyrexia', 'febrile', 'chills'], ['jwaram', 'kaichal', 'suram', 'காய்ச்சல்', 'ஜுரம்', 'சுரம்'], ['bukhar', 'bukhaar', 'tez bukhar', 'बुखार']],
   ['Cough', ['cough', 'coughing'], ['irumal', 'irumbudhu', 'இருமல்'], ['khansi', 'khasi', 'khaansi', 'खांसी', 'खासी']],
   ['Vomiting', ['vomit', 'vomiting', 'vomited', 'emesis'], ['vandhi', 'vaanthi', 'vandhi edukkudhu', 'வாந்தி'], ['ulti', 'ulti ho', 'उल्टी']],
   ['Nausea', ['nausea', 'nauseous', 'nauseated'], ['kumattal', 'குமட்டல்'], ['ji machlana', 'ji machal', 'जी मिचलाना', 'जी मचल']],
-  ['Abdominal pain', ['abdominal pain', 'stomach pain', 'belly pain', 'tummy pain', 'stomach ache'], ['vayiru vali', 'vayiru valikkudhu', 'vayitru vali', 'வயிற்று வலி', 'வயிறு வலி', 'வயிற்றில் வலி'], ['pet dard', 'pet mein dard', 'pet me dard', 'पेट दर्द', 'पेट में दर्द', 'पेट मे दर्द']],
-  ['Headache', ['headache', 'head ache'], ['thalai vali', 'thalaivali', 'தலைவலி', 'தலை வலி'], ['sir dard', 'sar dard', 'sirdard', 'सिर दर्द', 'सरदर्द', 'सिरदर्द']],
+  ['Abdominal pain', ['abdominal pain', 'stomach pain', 'belly pain', 'tummy pain', 'stomach ache', 'pain in the abdomen', 'pain in abdomen', 'pain in the stomach', 'pain in stomach', 'pain in the belly', 'abdominal discomfort'], ['vayiru vali', 'vayiru valikkudhu', 'vayitru vali', 'வயிற்று வலி', 'வயிறு வலி', 'வயிற்றில் வலி'], ['pet dard', 'pet mein dard', 'pet me dard', 'पेट दर्द', 'पेट में दर्द', 'पेट मे दर्द']],
+  ['Headache', ['headache', 'head ache', 'pain in the head'], ['thalai vali', 'thalaivali', 'தலைவலி', 'தலை வலி'], ['sir dard', 'sar dard', 'sirdard', 'सिर दर्द', 'सरदर्द', 'सिरदर्द']],
   ['Dizziness', ['dizzy', 'dizziness', 'giddiness', 'vertigo', 'lightheaded'], ['thalai suthal', 'thalai suthudhu', 'தலை சுற்றல்', 'தலைச்சுற்றல்', 'தலை சுத்து'], ['chakkar', 'chakkar aa', 'चक्कर'], true],
   ['Syncope / loss of consciousness', ['syncope', 'fainted', 'faint', 'blackout', 'blacked out', 'loss of consciousness', 'collapsed', 'collapse'], ['mayakkam', 'mayangi', 'மயக்கம்', 'மயங்கி'], ['behosh', 'behoshi', 'बेहोश', 'बेहोशी']],
   ['Palpitations', ['palpitation', 'palpitations', 'heart racing', 'racing heart'], ['padapadappu', 'padapadakkudhu', 'படபடப்பு', 'படபடன்னு'], ['dhadkan', 'dhadkan tez', 'धड़कन', 'धडकन']],
@@ -76,7 +76,7 @@ var SYMPTOMS = [
   ['Weakness', ['weakness', 'weak', 'tiredness', 'fatigue'], ['sorvu', 'sorvaa', 'சோர்வு'], ['kamzori', 'kamjori', 'कमजोरी'], true],
   ['Loose stools', ['loose motion', 'loose motions', 'diarrhea', 'diarrhoea', 'loose stools', 'watery stools'], ['bedhi', 'pedhi', 'பேதி'], ['dast', 'दस्त']],
   ['Burning micturition', ['burning micturition', 'dysuria', 'burning urine', 'burning while passing urine'], ['neer erichal', 'neerkadupu', 'நீர் எரிச்சல்', 'சிறுநீர் எரிச்சல்'], ['peshab mein jalan', 'peshab me jalan', 'पेशाब में जलन']],
-  ['Back pain', ['back pain', 'backache'], ['muthugu vali', 'முதுகு வலி'], ['kamar dard', 'peeth dard', 'कमर दर्द', 'पीठ दर्द']],
+  ['Back pain', ['back pain', 'backache', 'pain in the back'], ['muthugu vali', 'முதுகு வலி'], ['kamar dard', 'peeth dard', 'कमर दर्द', 'पीठ दर्द']],
   ['Leg swelling', ['leg swelling', 'pedal edema', 'pedal oedema', 'swollen legs', 'swelling of legs'], ['kaal veekkam', 'கால் வீக்கம்'], ['pair mein sujan', 'pairon mein sujan', 'पैरों में सूजन', 'पैर में सूजन']],
   ['Seizure', ['seizure', 'seizures', 'convulsion', 'convulsions', 'fits', 'epileptic fit'], ['valippu', 'வலிப்பு'], ['daura', 'mirgi', 'दौरा', 'मिर्गी']],
   ['Focal weakness / slurred speech', ['slurred speech', 'one side weakness', 'weakness of one side', 'facial droop', 'hemiparesis', 'paralysis'], ['pakkavadham', 'பக்கவாதம்'], ['lakwa', 'लकवा']],
@@ -100,7 +100,7 @@ function negated(s, i, e) {
 
 var PMH = [
   ['Diabetes mellitus', ['diabetes', 'diabetic', 'dm', 't2dm', 'type 2 dm', 'sakkarai noi', 'sugar patient', 'சர்க்கரை நோய்', 'சுகர்', 'madhumeh', 'मधुमेह']],
-  ['Hypertension', ['hypertension', 'hypertensive', 'htn', 'high bp', 'bp patient', 'ரத்த அழுத்தம்', 'ucch raktchap', 'उच्च रक्तचाप']],
+  ['Hypertension', ['hypertension', 'hypertensive', 'htn', 'high bp', 'high blood pressure', 'blood pressure problem', 'raised blood pressure', 'bp patient', 'ரத்த அழுத்தம்', 'ucch raktchap', 'उच्च रक्तचाप']],
   ['Coronary artery disease', ['cad', 'ischemic heart disease', 'ischaemic heart disease', 'heart disease', 'previous mi', 'old mi', 'stent', 'cabg', 'ptca', 'bypass surgery']],
   ['Asthma', ['asthma', 'dama', 'ஆஸ்துமா', 'दमा', 'अस्थमा']],
   ['COPD', ['copd']],
@@ -256,6 +256,11 @@ const SENT_RULES = [
   ['ix', /\b(ecg|ekg|troponin|trop[- ]?[it]|x-?ray|cxr|ct\b|ct scan|mri|echo\b|echocardiogram|usg|ultrasound|pocus|abg|cbc|lft|rft|kft|electrolytes|creatinine|d-?dimer|blood tests?|labs?|culture|urine routine)\b/],
   ['imp', /\b(impression|diagnosis|diagnosed|provisional|working diagnosis|probably|likely|suspect(?:ed|ing)?|rule out|r\/o|differentials?|consistent with|suggestive of|c\/w|s\/o)\b/],
   ['plan', /\b(start(?:ed)?|give|given|gave|inj(?:ection)?|iv fluids?|nebuli[sz](?:e|ed|ation)|oxygen|o2 (?:started|given|via)|intubat\w+|monitor(?:ing)?|consult|continue|stat dose|loading dose|bolus|infusion|thrombolys\w+|cath lab|plan)\b/],
+  ['pa', /\bairway\b/],
+  ['pb', /\b(?:breathing (?:is|was|looks)|breathing (?:fast|normal|laboured|labored|effort)|work of breathing|respiratory effort)\b/],
+  ['pc', /\b(?:circulation|peripheries|capillary refill|\bcrt\b|cold and clammy|iv access|iv cannula|two cannulas)\b/],
+  ['pd', /\b(?:disability|avpu|alert and oriented|pupils (?:are|were))\b/],
+  ['pe', /\b(?:exposure|fully exposed|temperature maintained|no external injur\w+)\b/],
   ['ex_rs', /\b(air entry|crepitations?|crackles|wheeze|rhonchi|chest (?:is )?clear|breath sounds)\b/],
   ['ex_cvs', /\b(s1 ?s2|murmurs?|jvp|pedal oedema|pedal edema|heart sounds|peripheral pulses|capillary refill|\bcrt\b)\b/],
   ['ex_abd', /\b(abdomen|guarding|rigidity|tenderness|bowel sounds|hepatomegaly|splenomegaly)\b/],
@@ -284,14 +289,14 @@ export function parseUtterance(text, orig) {
   const vitals = {};
   ['hr', 'sbp', 'dbp', 'rr', 'spo2', 'temp', 'gcs', 'rbs'].forEach((k) => { if (f[k]) vitals[k] = f[k]; });
   Object.keys(VITAL_MENTION).forEach((k) => {
-    if (VITAL_MENTION[k].test(low) && !vitals[k]) flags.push((k === 'sbp' ? 'BP' : k.toUpperCase()) + ' was mentioned but no usable value was heard. Enter it by hand.');
+    if (!vitals[k] && new RegExp(VITAL_MENTION[k].source + '[^.\\n]{0,24}\\d').test(low)) flags.push((k === 'sbp' ? 'BP' : k.toUpperCase()) + ' was mentioned but no usable value was heard. Enter it by hand.');
   });
   const patient = {};
   ['age', 'sex', 'triage', 'arrival'].forEach((k) => { if (f[k]) patient[k] = f[k]; });
   if (f.mlc) patient.mlc = true;
 
   const sym = scanSymptoms(norm);
-  const cc = sym.complaints.map((x) => x.en + (x.duration ? ' × ' + x.duration : ''));
+  const cc = sym.complaints.map((x) => x.en + (x.duration ? (/^since/.test(x.duration) ? ' ' : ' × ') + x.duration : ''));
   const hpi = [];
   if (sym.symptoms.length) hpi.push('Associated symptoms: ' + sym.symptoms.map((x) => x.en + (x.duration ? ' (' + x.duration + ')' : '')).join(', ') + '.');
   if (sym.negatives.length) hpi.push('Denies: ' + sym.negatives.map((x) => x.en).join(', ') + '.');
@@ -304,8 +309,11 @@ export function parseUtterance(text, orig) {
   const sentences = norm.split(/(?:[.?!]+\s+|\n+)/).map((x) => x.trim().replace(/[.?!]+$/, '')).filter(Boolean);
   sentences.forEach((snt) => {
     const sl = snt.toLowerCase();
-    if (dispo && sl.includes(dispo.text.toLowerCase().slice(0, 12))) return; // disposition sentence is not also "plan"
     SENT_RULES.forEach(([k, re]) => {
+      if (/^p[a-e]$/.test(k)) { // primary survey: one clause per letter
+        snt.split(/,|;|\band\b/).forEach((cl) => { if (re.test(cl.toLowerCase())) { (fields[k] = fields[k] || []); const t = cl.trim(); if (t && !fields[k].includes(t)) fields[k].push(t); } });
+        return;
+      }
       if (!re.test(sl)) return;
       if (k === 'plan' && /\b(started|starts) (?:\d|on)\b/.test(sl) && false) return;
       (fields[k] = fields[k] || []);
@@ -313,7 +321,18 @@ export function parseUtterance(text, orig) {
     });
   });
   // arrays -> strings only where the store expects strings
-  ['ix', 'imp', 'plan', 'ex_rs', 'ex_cvs', 'ex_abd', 'ex_cns', 'ex_gen'].forEach((k) => { if (Array.isArray(fields[k])) fields[k] = fields[k].join('. ') + '.'; });
+  ['pa', 'pb', 'pc', 'pd', 'pe', 'ix', 'imp', 'plan', 'ex_rs', 'ex_cvs', 'ex_abd', 'ex_cns', 'ex_gen'].forEach((k) => { if (Array.isArray(fields[k])) fields[k] = fields[k].join('. ') + '.'; });
+
+  // Anything that matched nothing is kept as spoken in History, so spoken content is never silently dropped.
+  const leftovers = [];
+  sentences.forEach((snt) => {
+    const sl = snt.toLowerCase();
+    if (snt.split(/\s+/).length < 4 || SENT_RULES.some(([, re]) => re.test(sl)) || hasSymptom(sl) || findDispo(snt) || Object.keys(extractFields(numberWords(snt))).length) return;
+    if (/^(?:ok(?:ay)?|yes|no|right|alright|thank|please|sir|doctor)\b/.test(sl)) return;
+    leftovers.push(snt.replace(/^re-?assess(?:ment)?[.:,]?\s*/i, ''));
+  });
+  leftovers.filter(Boolean).forEach((l) => hpi.push(l + '.'));
+  if (leftovers.length) flags.push('Some of what was said did not match a specific column, so it was added to History as spoken. Move it if needed.');
 
   const kind = {
     reassess: /\bre-?assess(?:ment|ed)?\b/.test(low),

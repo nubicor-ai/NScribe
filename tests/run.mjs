@@ -293,6 +293,16 @@ await ok('Rule parser understands romanised and native Tamil/Hindi phrases (not 
   eq([a.hpi.join(), b.hpi.join()], ['Denies: Fever.', 'Denies: Fever.'], 'negation'); eq(a.vitals, { rbs: '250' }, 'rbs'); eq([b.patient.age, b.patient.sex], ['55', 'M'], 'age/sex'); return 'ok';
 });
 
+await ok('One natural English dictation fills every matching column (complaint, vitals, history, survey, exam, work-up, plan, disposition)', async () => {
+  const s = await open(), p = s.page;
+  const t = 'The patient is a 55 year old man who came with severe pain in the chest since morning and he is sweating a lot. Blood pressure is one hundred over seventy, heart rate eighty eight, saturation ninety four percent. He has history of high blood pressure and diabetes, taking amlodipine. On examination chest has bilateral crepitations. Airway is patent, breathing is fast, circulation cold peripheries. ECG shows ST elevation. Impression is acute coronary syndrome. Plan to give aspirin and shift to ICU.';
+  await chunk(p, 'R1', t, 50); await settle(p);
+  const b = await bed(p, 'R1');
+  for (const k of ['cc', 'pmh', 'meds', 'pa', 'pb', 'pc', 'ex_rs', 'ix', 'imp', 'plan', 'dispo']) assert(b.f[k], 'column empty: ' + k);
+  eq([b.patient.age, b.patient.sex, b.dispoType], ['55', 'M', 'Shifted'], 'patient/status');
+  const v = b.vitalsLog[0]; eq([v.hr, v.sbp, v.dbp, v.spo2], ['88', '100', '70', '94'], 'vitals'); await s.close(); return 'all columns filled';
+});
+
 if (server) server.kill();
 const w = Math.max(...results.map((r) => r[1].length));
 console.log('\n' + results.map((r) => `${r[0]}  ${r[1]}${r[2] ? '\n      ' + r[2] : ''}`).join('\n'));

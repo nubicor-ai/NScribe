@@ -176,7 +176,7 @@ export function applyParse(id, p, meta) {
   if (p.fields.pmh && mergeList(b, 'pmh', p.fields.pmh)) filled.push('past history');
   if (p.fields.meds && mergeList(b, 'meds', p.fields.meds)) filled.push('medicines');
   if (p.fields.allergies && !b.edited.allergies && !b.f.allergies) { b.f.allergies = p.fields.allergies; filled.push('allergies'); }
-  ['ix', 'imp', 'plan', 'ex_rs', 'ex_cvs', 'ex_abd', 'ex_cns', 'ex_gen'].forEach((k) => { if (p.fields[k] && appendLine(b, k, p.fields[k])) filled.push(k); });
+  ['pa', 'pb', 'pc', 'pd', 'pe', 'ix', 'imp', 'plan', 'ex_rs', 'ex_cvs', 'ex_abd', 'ex_cns', 'ex_gen'].forEach((k) => { if (p.fields[k] && appendLine(b, k, p.fields[k])) filled.push(k); });
   if (p.dispo) {
     b.dispoType = p.dispo.type;
     if (!b.edited.dispo) b.f.dispo = p.dispo.text;
