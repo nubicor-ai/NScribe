@@ -1,0 +1,21 @@
+// Records every network request (page, workers, service worker) while using the app in airplane mode.
+import { chromium } from './pw.mjs';
+import { writeFileSync } from 'node:fs';
+const b = await chromium.launch({ args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream', '--use-file-for-fake-audio-capture=tests/audio/bursts.wav'] });
+const ctx = await b.newContext({ permissions: ['microphone'], viewport: { width: 420, height: 900 } });
+const log = []; const stamp = (t) => log.push(t);
+ctx.on('request', (r) => stamp(`${r.method()} ${r.url()}`)); ctx.on('requestfailed', (r) => stamp(`FAILED ${r.url()} ${r.failure() && r.failure().errorText}`));
+const p = await ctx.newPage();
+await p.goto('http://localhost:8099/?stub=1'); await p.waitForSelector('#app:not([hidden])'); await p.evaluate(() => navigator.serviceWorker.ready);
+await p.reload(); await p.waitForFunction(() => !!navigator.serviceWorker.controller);
+const online = log.length; stamp('--- AIRPLANE MODE ON ---'); await ctx.setOffline(true); const mark = log.length;
+await p.reload(); await p.waitForSelector('#app:not([hidden])');
+await p.locator('.bchip[data-bed="R1"]').click();
+await p.fill('#typed', '58 M chest pain 2 hours BP 90/60 pulse 112'); await p.click('button:has-text("Add to R1")');
+await p.click('#micbtn'); await p.waitForTimeout(9000); await p.click('#micbtn'); await p.waitForTimeout(500);
+await p.locator('#zones button', { hasText: 'ALL BEDS' }).click(); await p.click('#settingsbtn'); await p.waitForTimeout(500);
+const off = log.slice(mark).filter((l) => !l.startsWith('---'));
+const ext = off.filter((l) => !/ http:\/\/localhost/.test(l) && !/ (data|blob):/.test(l));
+const out = [`Requests while online (first load + SW install): ${online}`, `Requests in airplane mode: ${off.length}`, `Requests to anything other than this site in airplane mode: ${ext.length}`, '', ...log];
+writeFileSync('tests/network-proof.txt', out.join('\n') + '\n'); console.log(out.slice(0, 3).join('\n'));
+await b.close(); process.exit(ext.length ? 1 : 0);
