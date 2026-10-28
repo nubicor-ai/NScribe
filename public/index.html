@@ -6,9 +6,9 @@
 <meta name="theme-color" content="#170F28">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="NScribe">
-<link rel="manifest" href="/manifest.webmanifest">
-<link rel="icon" href="/icon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="/icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
 <style>html{scroll-padding-top:env(safe-area-inset-top,0px)}[hidden]:not([hidden=until-found i]){display:none!important}img{max-width:100%}body{margin:0}</style>
 </head>
 <body>
@@ -268,7 +268,7 @@ label.drow, .drow { display: grid; grid-template-columns: auto minmax(0, 1fr); g
   <div class="grid" id="grid">
     <div class="pane" id="pane-capture" data-active="true" role="tabpanel" aria-labelledby="tab-capture">
       <section class="card dict">
-        <h2 class="hd">Conversation <span class="sub">Tamil · Hindi · English</span></h2>
+        <h2 class="hd">Conversation notes <span class="sub">reference only</span></h2>
         <div class="body">
           <div class="langrow">
             <div class="field"><span class="lbl">Language</span><div class="seg" id="lang"></div></div>
@@ -276,7 +276,7 @@ label.drow, .drow { display: grid; grid-template-columns: auto minmax(0, 1fr); g
             <label class="toggle" title="Say who reported each symptom"><input type="checkbox" id="spk"> Label who said what</label>
           </div>
           <div>
-            <label for="raw">Paste, dictate or load the conversation</label>
+            <label for="raw">Paste, dictate or load the conversation (kept beside the form for reference)</label>
             <textarea class="fld" id="raw" rows="6" placeholder="Patient: nenju vali rendu manineram-a irukku, left kai-ku pogudhu. Attender: bahut paseena aa raha tha doctor, saans bhi phool rahi hai. Fever illa. Sugar-ku tablet edukkaren..."></textarea>
           </div>
           <div class="actions">
@@ -288,7 +288,7 @@ label.drow, .drow { display: grid; grid-template-columns: auto minmax(0, 1fr); g
             <button class="btn" id="clearraw">Clear text</button>
           </div>
           <div class="status" id="aistatus" role="status" aria-live="polite"></div>
-          <p class="hint">For voice, switch your phone keyboard to Tamil or Hindi and tap its mic, or export a transcript from your recorder app and load it here. Leave out names and hospital numbers. Text goes to Claude only when you tap Decode or Fill, and every result needs your check.</p>
+          <p class="hint">Works fully offline. For voice, switch your phone keyboard to Tamil or Hindi and tap its mic, or load a transcript file. Read it, then fill the fields below yourself. Leave out names and hospital numbers.</p>
         </div>
       </section>
 
@@ -930,10 +930,7 @@ label.drow, .drow { display: grid; grid-template-columns: auto minmax(0, 1fr); g
   });
   $('#clearraw').addEventListener('click', function () { rawEl.value = ''; structureToggle(); update(); rawEl.focus(); });
 
-  /* ---------- Services: file download and the Claude proxy ---------- */
-  var LS_CODE = 'nubicor-scribe-access-code';
-  function accessCode() { try { return localStorage.getItem(LS_CODE) || ''; } catch (e) { return ''; } }
-
+  /* ---------- Services: file download (offline, no network calls) ---------- */
   var downloads = {
     save: function (o) {
       var url = URL.createObjectURL(new Blob([o.data], { type: 'text/plain;charset=utf-8' }));
@@ -941,30 +938,6 @@ label.drow, .drow { display: grid; grid-template-columns: auto minmax(0, 1fr); g
       document.body.append(a); a.click(); a.remove();
       setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
       return Promise.resolve();
-    }
-  };
-
-  var sample = {
-    json: function (prompt, opts) {
-      return fetch('/api/sample', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Access-Code': accessCode() },
-        body: JSON.stringify({ prompt: prompt }),
-        signal: opts && opts.signal
-      }).then(function (res) {
-        if (res.status === 401) {
-          var c = window.prompt('Enter the access code for this NScribe server');
-          if (c) { try { localStorage.setItem(LS_CODE, c.trim()); } catch (e) {} }
-          throw { code: 'not_granted' };
-        }
-        if (res.status === 429) throw { code: 'rate_limited' };
-        return res.json().then(function (j) {
-          if (!res.ok) throw { code: j && j.error || 'failed' };
-          return j.result;
-        }, function () { throw { code: 'invalid_json' }; });
-      }, function (e) {
-        throw { code: e && e.name === 'AbortError' ? 'cancelled' : 'network' };
-      });
     }
   };
 
@@ -1151,70 +1124,6 @@ label.drow, .drow { display: grid; grid-template-columns: auto minmax(0, 1fr); g
     ev.target.value = '';
   });
 
-  /* ---------- Claude calls ---------- */
-  (function () {
-    var decodeBtn = $('#decode'), fillBtn = structureBtn, stop = $('#stop'), st = $('#aistatus'), ctl = null;
-    decodeBtn.hidden = false; fillBtn.hidden = false; structureToggle();
-    stop.addEventListener('click', function () { if (ctl) ctl.abort(); });
-
-    function begin(msg) {
-      ctl = new AbortController();
-      decodeBtn.disabled = true; fillBtn.disabled = true; stop.hidden = false;
-      st.classList.remove('err'); st.textContent = msg;
-      return ctl.signal;
-    }
-    function end() { ctl = null; stop.hidden = true; structureToggle(); }
-    function fail(e) {
-      var c = e && e.code;
-      if (c === 'cancelled') { st.textContent = 'Stopped.'; return; }
-      st.classList.add('err');
-      st.textContent = c === 'not_granted' ? 'Access code needed. Tap the button again and enter it.'
-        : c === 'rate_limited' ? 'Too many requests right now. Try again in a minute.'
-        : c === 'invalid_json' ? 'Claude\'s reply could not be read. Tap the button to try again.'
-        : c === 'not_configured' ? 'The server has no Anthropic API key set.'
-        : 'That did not work. Tap the button to try again.';
-    }
-
-    decodeBtn.addEventListener('click', function () {
-      var text = rawEl.value.trim(); if (!text) return;
-      var signal = begin('Decoding…');
-      sample.json(decodePrompt(text), { signal: signal, cache: false }).then(function (r) {
-        if (!r || typeof r !== 'object') throw { code: 'invalid_json' };
-        S.dec = normalizeDec(r);
-        update();
-        var d = S.dec, n = d.complaints.length + d.symptoms.length + d.negatives.length + d.details.length;
-        addDecoded();
-        st.textContent = n ? 'Decoded ' + n + ' items and filled Chief complaint and History. Items marked confirm are unticked: tick them and tap Add to include them.' : 'Nothing clinical found in that text.';
-        var card = $('#deccard'); if (card.scrollIntoView) card.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-      }).catch(fail).then(end);
-    });
-
-    fillBtn.addEventListener('click', function () {
-      var text = rawEl.value.trim(); if (!text) return;
-      var signal = begin('Thinking…');
-      sample.json(fillPrompt(text), { signal: signal, cache: false }).then(function (r) {
-        if (!r || typeof r !== 'object') throw { code: 'invalid_json' };
-        var n = 0;
-        AI_KEYS.forEach(function (k) {
-          var v = r[k];
-          if (v == null || v === '' || v === false) return;
-          if (k === 'mlc') { S.mlc = true; E.mlc.checked = true; n++; return; }
-          v = String(v).trim();
-          if (!v) return;
-          if (k === 'sex') { v = v.toUpperCase() === 'M' ? 'M' : v.toUpperCase() === 'F' ? 'F' : v.toLowerCase() === 'other' ? 'Other' : ''; if (!v) return; }
-          if (k === 'triage') { v = v.charAt(0).toUpperCase() + v.slice(1).toLowerCase(); if (TRIAGES.indexOf(v) < 0) return; }
-          if (k === 'arrival') { if (ARRIVALS.indexOf(v) < 0) return; }
-          if (k === 'age') { v = v.replace(/[^\d]/g, ''); if (!v) return; }
-          S[k] = v; n++;
-          if (W[k] && TEXT_KEYS.indexOf(k) >= 0) W[k].classList.add('ai');
-        });
-        syncInputs(); update();
-        st.textContent = n ? 'Filled ' + n + ' fields. Fields marked in coral came from Claude; check each against the patient.' : 'Nothing extractable in that text.';
-        if (n) document.querySelectorAll('details.sec').forEach(function (d) { d.open = true; });
-      }).catch(fail).then(end);
-    });
-  })();
-
   // Save quickly if the page is being hidden or closed
   document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') flush(); });
 
@@ -1222,7 +1131,7 @@ label.drow, .drow { display: grid; grid-template-columns: auto minmax(0, 1fr); g
   (function initLocalList() {
     var all = lsGetAll(); items = sortItems(Object.keys(all).map(function (k) { return all[k]; }));
   })();
-  if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(function () {});
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function () {});
   syncInputs();
   update(true);
   structureToggle();

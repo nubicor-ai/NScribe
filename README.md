@@ -1,29 +1,15 @@
 # NScribe
 
-Emergency-department scribe by Nubicor. Paste or load a Tamil, Hindi or English conversation, and Claude decodes the history and fills a structured ED note. Installable as a PWA, works offline for manual entry.
+Offline emergency-department note builder by Nubicor. No server, no API key, no network calls. Vitals flags, derived scores (MAP, shock index, qSOFA), a live structured note, copy / save as .txt, and saved encounters (browser storage).
 
-## Run
+## Use
 
-```
-ANTHROPIC_API_KEY=sk-ant-... npm start
-```
+Open `public/index.html` in a browser. That's it.
 
-Open http://localhost:3000. No dependencies; Node 18+.
-
-| Env var | Purpose |
-| --- | --- |
-| `ANTHROPIC_API_KEY` | Required for Decode / Fill. The key stays on the server. |
-| `ACCESS_CODE` | Optional. If set, the app asks for this code before calling Claude. Set it on any public deployment. |
-| `NSCRIBE_MODEL` | Optional. Defaults to `claude-sonnet-5-5`. |
-| `PORT` | Optional. Defaults to 3000. |
-
-## Layout
-
-- `public/` the app (single-page `index.html`, manifest, service worker, icons)
-- `server/index.js` static server plus `POST /api/sample`, a rate-limited proxy to the Anthropic Messages API
+To install it as an app on a phone or desktop, serve the `public/` folder over HTTPS (any static host) or localhost (`python3 -m http.server -d public`), then use the browser's "Install" / "Add to Home Screen". After the first load it works with no connection.
 
 ## Notes
 
-- Encounters are saved in the browser's localStorage only. Nothing is stored server-side, and conversation text is sent to Anthropic only when Decode or Fill is tapped.
+- Encounters are stored in the browser only; clearing site data removes them.
 - Output is a draft for clinician review. Do not enter patient names or hospital numbers.
-- Serve over HTTPS in production (required for install and the service worker off localhost).
+- Fonts load from Google Fonts when online and fall back to system fonts offline.
