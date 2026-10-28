@@ -1,3 +1,7 @@
 node_modules
 .env
 dist
+tests/audio/*.wav
+tests/audio/*.onnx
+# third-party minified bundle trips GitHub secret scanning (false positive); created by `npm run vendor` and shipped in the deploy zip
+public/vendor/transformers.min.js

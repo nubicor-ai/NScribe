@@ -1,0 +1,20 @@
+{
+  "name": "nscribe",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Offline multi-bed ED scribe (Nubicor)",
+  "scripts": {
+    "vendor": "node scripts/vendor.mjs",
+    "build": "node scripts/build-sw.mjs",
+    "start": "node scripts/serve.mjs",
+    "test": "node tests/run.mjs"
+  },
+  "devDependencies": {
+    "@fontsource/ibm-plex-mono": "5.2.5",
+    "@fontsource/noto-sans-devanagari": "^5.2.5",
+    "@fontsource/noto-sans-tamil": "5.2.5",
+    "@fontsource/poppins": "5.2.5",
+    "@huggingface/transformers": "4.3.2"
+  }
+}

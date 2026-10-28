@@ -1,0 +1,32 @@
+# Netlify (Git deploy): installs the pinned speech runtime, then publishes public/. For drag-and-drop, use the deploy zip instead.
+[build]
+  # Fetches the speech runtime (kept out of Git, see .gitignore) and regenerates the offline file list.
+  command = "npm ci && npm run vendor && npm run build"
+  publish = "public"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    # Optional speed-up (2-3x faster decoding): see extras/multithread-headers.md before enabling COOP/COEP.
+    Referrer-Policy = "no-referrer"
+    X-Content-Type-Options = "nosniff"
+
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+[[headers]]
+  for = "/vendor/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/fonts/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
