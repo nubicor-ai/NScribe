@@ -6,7 +6,8 @@
 <title>Diaphragm Ultrasound and NIV Tracker (AECOPD)</title>
 <style>
 :root{--accent:#1b5fa8;--accent-soft:#e6eef8;--ink:#1c2430;--mute:#5b6675;--line:#d5dbe3;--bg:#f4f6f9;--card:#fff;
-  --green:#2e8b57;--red:#c0392b;--amber:#d98e04;--grey:#8a94a3}
+  --green:#2e8b57;--red:#c0392b;--amber:#d98e04;--grey:#8a94a3;--inbg:#fff;--inbd:#9aa5b4;--warnbg:#fff4e0;--verify:#8a4b00;color-scheme:light}
+:root[data-theme=dark]{--accent:#6cb0f5;--accent-soft:#1d2d42;--ink:#e6eaf0;--mute:#a3adbb;--line:#3a4556;--bg:#12171f;--card:#1b222c;--green:#3fa56a;--red:#e0584a;--amber:#e0a020;--grey:#7b8696;--inbg:#222b37;--inbd:#566377;--warnbg:#3a2e12;--verify:#f0b060;color-scheme:dark}
 *{box-sizing:border-box}
 body{margin:0;font:17px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:var(--ink);background:var(--bg)}
 header{background:var(--card);border-bottom:1px solid var(--line);padding:10px 16px}
@@ -17,6 +18,7 @@ h1{font-size:1.25rem;margin:0 0 6px}
 .btn{font:inherit;border:1px solid var(--accent);background:var(--card);color:var(--accent);padding:8px 14px;border-radius:8px;cursor:pointer}
 .btn:hover{background:var(--accent-soft)}
 .btn.primary,.btn.on{background:var(--accent);color:#fff}
+:root[data-theme=dark] .btn.primary,:root[data-theme=dark] .btn.on{color:#0b1420}
 .btn.danger{border-color:var(--red);color:var(--red)}
 main{padding:12px 16px 40px}
 .view{display:none}.view.on{display:block}
@@ -30,22 +32,22 @@ legend{font-weight:700;color:var(--accent);padding:0 6px}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
 .fld{display:flex;flex-direction:column;gap:3px;font-weight:600}
 .fld span{font-size:.95rem}
-input,select,textarea{font:inherit;padding:8px;border:1px solid #9aa5b4;border-radius:8px;width:100%;background:#fff;color:var(--ink)}
+input,select,textarea{font:inherit;padding:8px;border:1px solid var(--inbd);border-radius:8px;width:100%;background:var(--inbg);color:var(--ink)}
 input:focus,select:focus,textarea:focus,.btn:focus{outline:3px solid #9cc2ee}
 small,.help{font-weight:400;color:var(--mute);font-size:.85rem}
 .help{display:block;margin:2px 0 8px}
 .calc{background:var(--accent-soft);border-radius:8px;padding:8px 10px;margin-top:10px;font-size:.95rem}
-.item{display:flex;gap:10px;align-items:center;width:100%;text-align:left;font:inherit;background:#fff;border:1px solid var(--line);border-radius:8px;padding:9px 10px;margin-bottom:6px;cursor:pointer}
+.item{display:flex;gap:10px;align-items:center;width:100%;text-align:left;font:inherit;background:var(--inbg);border:1px solid var(--line);border-radius:8px;padding:9px 10px;margin-bottom:6px;cursor:pointer}
 .item.sel{border:2px solid var(--accent);background:var(--accent-soft)}
 .item small{display:block}
 .dot{flex:none;width:16px;height:16px;border-radius:50%;background:var(--grey)}
 .dot.green{background:var(--green)}.dot.red{background:var(--red)}.dot.amber{background:var(--amber)}
-.warn{background:#fff4e0;border:1px solid var(--amber);border-radius:8px;padding:8px 10px;margin:8px 0;font-weight:600}
+.warn{background:var(--warnbg);border:1px solid var(--amber);border-radius:8px;padding:8px 10px;margin:8px 0;font-weight:600}
 .inf h3{border-bottom:1px solid var(--line);padding-bottom:2px}
 .inf ul{margin:4px 0 0;padding-left:20px}
 .inf li{margin-bottom:4px;font-size:.95rem}
 .inf li.met{font-weight:600}
-.inf li.verify{color:#8a4b00}
+.inf li.verify{color:var(--verify)}
 .pattern{font-weight:700;padding:8px 10px;border-radius:8px;color:#fff;margin:6px 0}
 .pattern.green{background:var(--green)}.pattern.red{background:var(--red)}.pattern.amber{background:var(--amber)}.pattern.grey{background:var(--grey)}
 .tablewrap{overflow-x:auto}
@@ -59,7 +61,8 @@ tr.ver td:first-child{border-left:5px solid var(--green)}
 .row{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
 #printArea{display:none}
 @media print{
-  body{background:#fff;font-size:12px}
+  body{background:#fff;color:#000;font-size:12px}
+  #printArea,#printArea *{color:#000 !important;background:none !important}
   #app{display:none}
   #printArea{display:block}
   #printArea table{margin-bottom:8px}
@@ -82,6 +85,7 @@ tr.ver td:first-child{border-left:5px solid var(--green)}
     <button class="btn" data-act="backup">Backup to JSON</button>
     <button class="btn" data-act="restore">Restore from JSON</button>
     <button class="btn" data-act="print">Print case one-pager</button>
+    <button class="btn" data-act="theme" id="themeBtn"></button>
     <input type="file" id="restoreFile" accept=".json,application/json" style="display:none">
   </div>
 </header>
@@ -606,6 +610,7 @@ function setView(v) {
 function renderAll() { setView(view); }
 const ACTIONS = {
   tab: b => setView(b.dataset.view),
+  theme: () => { const order = ['auto','light','dark']; setTheme(order[(order.indexOf(getTheme()) + 1) % 3]); },
   sel: b => { sel = Number(b.dataset.i); renderCases(); },
   add: () => {
     let n = state.cases.length + 1; const ids = state.cases.map(c => c.id);
@@ -645,6 +650,21 @@ $('settings').addEventListener('input', e => {
   save(); updVcount();
 });
 
+/* ---------- theme (auto follows the device setting) ---------- */
+const THEME_KEY = 'diaphragmNivTracker.theme';
+function getTheme() { try { return localStorage.getItem(THEME_KEY) || 'auto'; } catch (e) { return 'auto'; } }
+function setTheme(t) {
+  try { localStorage.setItem(THEME_KEY, t); } catch (e) {}
+  applyTheme();
+}
+function applyTheme() {
+  const t = getTheme();
+  const dark = t === 'dark' || (t === 'auto' && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+  document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+  $('themeBtn').textContent = 'Theme: ' + t;
+}
+if (window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
+applyTheme();
 renderAll();
 </script>
 </body>
