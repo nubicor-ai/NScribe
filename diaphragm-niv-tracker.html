@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Diaphragm Ultrasound and NIV Tracker (AECOPD)</title>
+<style>
+:root{--accent:#1b5fa8;--accent-soft:#e6eef8;--ink:#1c2430;--mute:#5b6675;--line:#d5dbe3;--bg:#f4f6f9;--card:#fff;
+  --green:#2e8b57;--red:#c0392b;--amber:#d98e04;--grey:#8a94a3}
+*{box-sizing:border-box}
+body{margin:0;font:17px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:var(--ink);background:var(--bg)}
+header{background:var(--card);border-bottom:1px solid var(--line);padding:10px 16px}
+h1{font-size:1.25rem;margin:0 0 6px}
+.banner{background:var(--accent-soft);border:2px solid var(--accent);color:var(--accent);font-weight:700;padding:8px 12px;border-radius:8px}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px}
+.bar .sp{flex:1}
+.btn{font:inherit;border:1px solid var(--accent);background:var(--card);color:var(--accent);padding:8px 14px;border-radius:8px;cursor:pointer}
+.btn:hover{background:var(--accent-soft)}
+.btn.primary,.btn.on{background:var(--accent);color:#fff}
+.btn.danger{border-color:var(--red);color:var(--red)}
+main{padding:12px 16px 40px}
+.view{display:none}.view.on{display:block}
+.cols{display:grid;grid-template-columns:260px minmax(0,1fr) 380px;gap:14px;align-items:start}
+@media(max-width:1100px){.cols{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px}
+h2{font-size:1.15rem;margin:0 0 8px}
+h3{font-size:1.02rem;margin:14px 0 4px;color:var(--accent)}
+fieldset{border:1px solid var(--line);border-radius:10px;margin:14px 0;padding:10px 12px 14px}
+legend{font-weight:700;color:var(--accent);padding:0 6px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.fld{display:flex;flex-direction:column;gap:3px;font-weight:600}
+.fld span{font-size:.95rem}
+input,select,textarea{font:inherit;padding:8px;border:1px solid #9aa5b4;border-radius:8px;width:100%;background:#fff;color:var(--ink)}
+input:focus,select:focus,textarea:focus,.btn:focus{outline:3px solid #9cc2ee}
+small,.help{font-weight:400;color:var(--mute);font-size:.85rem}
+.help{display:block;margin:2px 0 8px}
+.calc{background:var(--accent-soft);border-radius:8px;padding:8px 10px;margin-top:10px;font-size:.95rem}
+.item{display:flex;gap:10px;align-items:center;width:100%;text-align:left;font:inherit;background:#fff;border:1px solid var(--line);border-radius:8px;padding:9px 10px;margin-bottom:6px;cursor:pointer}
+.item.sel{border:2px solid var(--accent);background:var(--accent-soft)}
+.item small{display:block}
+.dot{flex:none;width:16px;height:16px;border-radius:50%;background:var(--grey)}
+.dot.green{background:var(--green)}.dot.red{background:var(--red)}.dot.amber{background:var(--amber)}
+.warn{background:#fff4e0;border:1px solid var(--amber);border-radius:8px;padding:8px 10px;margin:8px 0;font-weight:600}
+.inf h3{border-bottom:1px solid var(--line);padding-bottom:2px}
+.inf ul{margin:4px 0 0;padding-left:20px}
+.inf li{margin-bottom:4px;font-size:.95rem}
+.inf li.met{font-weight:600}
+.inf li.verify{color:#8a4b00}
+.pattern{font-weight:700;padding:8px 10px;border-radius:8px;color:#fff;margin:6px 0}
+.pattern.green{background:var(--green)}.pattern.red{background:var(--red)}.pattern.amber{background:var(--amber)}.pattern.grey{background:var(--grey)}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%}
+th,td{border:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top;font-size:.95rem}
+th{background:var(--accent-soft)}
+td input[type=number]{width:90px}
+td input[type=text]{min-width:260px}
+tr.unv td:first-child{border-left:5px solid var(--amber)}
+tr.ver td:first-child{border-left:5px solid var(--green)}
+.row{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+#printArea{display:none}
+@media print{
+  body{background:#fff;font-size:12px}
+  #app{display:none}
+  #printArea{display:block}
+  #printArea table{margin-bottom:8px}
+  #printArea th,#printArea td{font-size:11px;padding:3px 5px}
+  #printArea .inf li{font-size:11px}
+}
+</style>
+</head>
+<body>
+<div id="app">
+<header>
+  <h1>Diaphragm ultrasound and NIV outcome tracker <small>(AECOPD only)</small></h1>
+  <div class="banner">Anonymized data only. Do not enter identifiers.</div>
+  <div class="bar">
+    <button class="btn on" data-act="tab" data-view="cases">Cases</button>
+    <button class="btn" data-act="tab" data-view="summary">Summary</button>
+    <button class="btn" data-act="tab" data-view="settings">Cutoff settings</button>
+    <span class="sp"></span>
+    <button class="btn" data-act="csv">Export all cases to CSV</button>
+    <button class="btn" data-act="backup">Backup to JSON</button>
+    <button class="btn" data-act="restore">Restore from JSON</button>
+    <button class="btn" data-act="print">Print case one-pager</button>
+    <input type="file" id="restoreFile" accept=".json,application/json" style="display:none">
+  </div>
+</header>
+<main>
+  <section id="v-cases" class="view on">
+    <div class="cols">
+      <aside class="card" id="list"></aside>
+      <div class="card" id="form"></div>
+      <aside class="card inf" id="inf"></aside>
+    </div>
+  </section>
+  <section id="v-summary" class="view"><div class="card" id="summary"></div></section>
+  <section id="v-settings" class="view"><div class="card" id="settings"></div></section>
+</main>
+</div>
+<div id="printArea"></div>
+
+<script>
+/* ======================================================================
+   CONFIG BLOCK: every cutoff lives here. Edit values here, or on the
+   "Cutoff settings" page (saved in this browser).
+   verified:false means VERIFY against the original paper before use.
+   "range" is shown exactly as that source gives it and is never merged
+   with another study's number. "value" is the number the rules apply.
+   ====================================================================== */
+const CUTOFFS = {
+  /* ---- Baseline (before NIV) ---- */
+  b_dtf_imp:  {group:'Baseline (before NIV)', label:'Diaphragmatic impairment', what:'DTF', op:'<', value:20, unit:'%', range:'',
+               source:'Abdelbasset et al. 2022 (Egypt J Bronchol)', verified:false},
+  b_dtf_work: {group:'Baseline (before NIV)', label:'Excessive workload', what:'DTF', op:'>', value:45, unit:'%', range:'40-50%',
+               source:'Working table, no specific paper', verified:false},
+  b_de_low:   {group:'Baseline (before NIV)', label:'Low excursion', what:'DE', op:'<', value:1.2, unit:' cm', range:'1.0-1.2 cm',
+               source:'Working table, no specific paper', verified:false},
+  b_de_dys:   {group:'Baseline (before NIV)', label:'Dysfunction (DE below cutoff or negative motion on admission)', what:'DE', op:'<', value:1.0, unit:' cm', range:'',
+               source:'Marchioni et al. CHEST 2018', verified:false},
+  /* ---- 1 hour post-NIV: success signals ---- */
+  s_dtf:      {group:'1 hour post-NIV: success signals', label:'DTF high enough', what:'1 h DTF', op:'≥', value:26, unit:'%', range:'',
+               source:'Default 26% chosen by user (Abdelbasset 2022 gives 26-29% for NIV failure; success direction not confirmed)', verified:false},
+  s_de:       {group:'1 hour post-NIV: success signals', label:'Excursion adequate', what:'1 h DE', op:'>', value:1.4, unit:' cm', range:'',
+               source:'Working table (source not given)', verified:false},
+  s_rr:       {group:'1 hour post-NIV: success signals', label:'RR/DTF low', what:'1 h RR/DTF', op:'<', value:0.6, unit:'', range:'',
+               source:'Working table; same 0.6 as the Mercurio et al. Critical Care 2021 failure signal (success direction not confirmed)', verified:false},
+  s_hacor:    {group:'1 hour post-NIV: success signals', label:'HACOR low', what:'1 h HACOR', op:'<', value:5, unit:'', range:'',
+               source:'Likely Duan et al. Intensive Care Med 2017 (source not confirmed)', verified:false},
+  /* ---- 1 hour post-NIV: failure signals ---- */
+  f_dtf26:    {group:'1 hour post-NIV: failure signals', label:'DTF low (Abdelbasset)', what:'1 h DTF', op:'<', value:26, unit:'%', range:'26-29%',
+               source:'Abdelbasset et al. 2022 (Egypt J Bronchol), NIV failure', verified:false},
+  f_dtf36:    {group:'1 hour post-NIV: failure signals', label:'DTF low (Mercurio)', what:'1 h DTF', op:'<', value:36, unit:'%', range:'',
+               source:'Mercurio et al. Critical Care 2021', verified:false},
+  f_de:       {group:'1 hour post-NIV: failure signals', label:'Excursion low', what:'1 h DE', op:'<', value:1.0, unit:' cm', range:'',
+               source:'Working table (source not given)', verified:false},
+  f_rr:       {group:'1 hour post-NIV: failure signals', label:'RR/DTF high', what:'1 h RR/DTF', op:'>', value:0.6, unit:'', range:'',
+               source:'Mercurio et al. Critical Care 2021', verified:false},
+  f_hacor:    {group:'1 hour post-NIV: failure signals', label:'HACOR high', what:'1 h HACOR', op:'>', value:5, unit:'', range:'',
+               source:'Likely Duan et al. Intensive Care Med 2017 (source not confirmed)', verified:false},
+  f_mm:       {group:'1 hour post-NIV: failure signals', label:'Paradoxical or flat M-mode (yes/no flag, no number)', what:'M-mode', op:'=', value:null, unit:'', range:'',
+               source:'Working table (source not given)', verified:false},
+  f_ph:       {group:'1 hour post-NIV: failure signals', label:'pH not improved', what:'change in pH (1 h minus baseline)', op:'≤', value:0, unit:'', range:'',
+               source:'Working table (source not given)', verified:false},
+  f_pco2:     {group:'1 hour post-NIV: failure signals', label:'PaCO2 not falling', what:'change in PaCO2 (1 h minus baseline)', op:'≥', value:0, unit:' mmHg', range:'',
+               source:'Working table (source not given)', verified:false},
+  /* ---- Helpers used by the inference rules ---- */
+  x_unlo:     {group:'Helpers for the inference rules', label:'Mechanical unloading target, lower end', what:'post-NIV DTF', op:'≥', value:25, unit:'%', range:'',
+               source:'Working table, no specific paper', verified:false},
+  x_unhi:     {group:'Helpers for the inference rules', label:'Mechanical unloading target, upper end', what:'post-NIV DTF', op:'≤', value:35, unit:'%', range:'',
+               source:'Working table, no specific paper', verified:false},
+  x_acid:     {group:'Helpers for the inference rules', label:'Persistent acidosis at 1 h', what:'1 h pH', op:'<', value:7.35, unit:'', range:'',
+               source:'Conventional acidosis threshold used by this tool (working definition)', verified:false}
+};
+/* Minimum number of 1 h signals that must have data before a pattern is called. */
+const ENGINE = { minEvaluable: 2 };
+/* ====================== END CONFIG BLOCK ====================== */
+
+const STORE_KEY = 'diaphragmNivTracker.v1';
+const CLOSING = 'Teaching and audit support only. Not a clinical decision. Bedside decisions rest on the treating clinician.';
+const FLAG_TEXT = 'Hyperdynamic / high-workload non-responder pattern. Low DTF alone does not explain failure here. Consider persistent drive, auto-PEEP, mask or ventilator asynchrony.';
+const HELP_DTF = 'DTF measured at zone of apposition, 8th-10th intercostal space, mid-axillary line, linear probe 7-12 MHz';
+const HELP_DE = 'DE measured subcostal M-mode, curvilinear probe 2-5 MHz, right hemidiaphragm';
+
+const FIELDS = {
+  base: [
+    {k:'ph',l:'pH'},{k:'paco2',l:'PaCO2 (mmHg)'},{k:'rr',l:'Respiratory rate (per min)'},{k:'hr',l:'Heart rate (per min)'},
+    {k:'gcs',l:'GCS (3-15)'},{k:'pf',l:'PaO2/FiO2 (optional)'}
+  ],
+  baseUs: [
+    {k:'ei',l:'End-inspiratory thickness (mm)'},{k:'ee',l:'End-expiratory thickness (mm)'},
+    {k:'de',l:'Diaphragm excursion DE (cm)',h:HELP_DE},{k:'hacor',l:'HACOR score',h:'Enter the total score you calculated (usual range 0-27; higher is worse).'}
+  ],
+  post: [{k:'ei',l:'End-inspiratory thickness (mm)'},{k:'ee',l:'End-expiratory thickness (mm)'}],
+  h1: [
+    {k:'ph',l:'pH'},{k:'paco2',l:'PaCO2 (mmHg)'},{k:'rr',l:'Respiratory rate (per min)'},{k:'hr',l:'Heart rate (per min)'},{k:'gcs',l:'GCS (3-15)'}
+  ],
+  h1Us: [
+    {k:'ei',l:'End-inspiratory thickness (mm)'},{k:'ee',l:'End-expiratory thickness (mm)'},
+    {k:'de',l:'Diaphragm excursion DE (cm)',h:HELP_DE},{k:'hacor',l:'HACOR score',h:'Enter the total score you calculated (usual range 0-27; higher is worse).'}
+  ]
+};
+const SECTION_NAMES = {base:'Baseline', post:'Post-NIV', h1:'1 h post-NIV'};
+const RANGES = {ph:[6.5,7.8],paco2:[10,200],rr:[4,70],hr:[20,250],gcs:[3,15],pf:[20,700],ei:[0.5,12],ee:[0.5,12],de:[-3,10],hacor:[0,27]};
+
+/* ---------- small helpers ---------- */
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const num = v => { if (v === null || v === undefined || v === '') return null; const x = Number(v); return isFinite(x) ? x : null; };
+const rd = (x, d) => Number(x.toFixed(d));
+const fx = (x, d, unit) => x == null ? 'missing' : x.toFixed(d) + (unit || '');
+const fs = (x, d, unit) => x == null ? 'missing' : (x > 0 ? '+' : '') + x.toFixed(d) + (unit || '');
+
+/* ---------- state ---------- */
+function blankCase(id) { return {id:id, age:'', sex:'', nonCopd:false, base:{}, post:{}, h1:{}, outcome:'', notes:''}; }
+function fixCase(x) {
+  const c = blankCase(String(x && x.id != null ? x.id : ''));
+  ['age','sex','outcome','notes'].forEach(k => { if (x && x[k] != null) c[k] = String(x[k]); });
+  c.nonCopd = !!(x && x.nonCopd);
+  ['base','post','h1'].forEach(s => { if (x && x[s] && typeof x[s] === 'object') Object.keys(x[s]).forEach(k => { c[s][k] = x[s][k]; }); });
+  return c;
+}
+function normalize(d) {
+  const cases = Array.isArray(d.cases) ? d.cases.map(fixCase) : [1,2,3,4,5].map(i => blankCase('C' + i));
+  const cut = {};
+  if (d.cutoffs && typeof d.cutoffs === 'object') Object.keys(d.cutoffs).forEach(k => {
+    if (!CUTOFFS[k]) return;
+    const o = d.cutoffs[k] || {}; cut[k] = {};
+    if ('value' in o) cut[k].value = num(o.value);
+    if (typeof o.source === 'string') cut[k].source = o.source;
+    if ('verified' in o) cut[k].verified = !!o.verified;
+  });
+  return {cases:cases, cutoffs:cut};
+}
+function load() {
+  try { const raw = localStorage.getItem(STORE_KEY); if (raw) return normalize(JSON.parse(raw)); } catch (e) {}
+  return normalize({});
+}
+let state = load();
+let sel = 0;
+let view = 'cases';
+function save() { try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) {} }
+const cur = () => state.cases[sel];
+function cut(k) { return Object.assign({key:k}, CUTOFFS[k], state.cutoffs[k] || {}); }
+
+/* ---------- calculations ---------- */
+function calc(c) {
+  const dtf = (ei, ee) => { ei = num(ei); ee = num(ee); return (ei == null || ee == null || ee <= 0) ? null : rd((ei - ee) / ee * 100, 1); };
+  const ratio = (rr, d) => { rr = num(rr); return (rr == null || d == null || d <= 0) ? null : rd(rr / d, 2); };
+  const diff = (a, b, d) => (a == null || b == null) ? null : rd(a - b, d);
+  const b = c.base, p = c.post, h = c.h1, r = {};
+  r.dtf0 = dtf(b.ei, b.ee); r.dtfP = dtf(p.ei, p.ee); r.dtf1 = dtf(h.ei, h.ee);
+  r.rd0 = ratio(b.rr, r.dtf0); r.rd1 = ratio(h.rr, r.dtf1);
+  r.dAbs = diff(r.dtfP, r.dtf0, 1);
+  r.dRel = (r.dtfP == null || r.dtf0 == null || r.dtf0 <= 0) ? null : rd((r.dtfP - r.dtf0) / r.dtf0 * 100, 1);
+  r.dpH = diff(num(h.ph), num(b.ph), 2);
+  r.dCO2 = diff(num(h.paco2), num(b.paco2), 1);
+  r.de0 = num(b.de); r.de1 = num(h.de);
+  r.hac0 = num(b.hacor); r.hac1 = num(h.hacor);
+  return r;
+}
+
+/* ---------- inference engine (plain rules, no AI) ---------- */
+function describe(k) {
+  const e = cut(k);
+  if (e.value == null && k !== 'f_mm') return e.what + ' ' + e.op + ' (cutoff blank)';
+  if (k === 'f_mm') return 'Paradoxical or flat M-mode = yes';
+  return e.what + ' ' + e.op + ' ' + e.value + (e.unit || '') + (e.range ? ' (that study\'s range: ' + e.range + ')' : '');
+}
+function srcOf(k) { const e = cut(k); return e.source + (e.verified ? ' [verified]' : ' [VERIFY]'); }
+
+function analyze(c) {
+  const r = calc(c);
+  const used = new Set();
+  const sec = [];
+  const E = k => cut(k);
+
+  /* data checks */
+  const checks = [];
+  if (c.nonCopd) checks.push({t:'WARNING: this case is marked non-COPD. The cutoffs here were not designed for it (this tool covers AECOPD only). Do not rely on the pattern below.', cls:'warn'});
+  if (/\d{6,}/.test(c.notes || '') || /\d{5,}/.test(c.id || '') || (c.id || '').length > 12)
+    checks.push({t:'Check: the Case ID or notes may contain an identifier. Use only a short code such as C1.', cls:'warn'});
+  if (state.cases.filter(x => x.id.trim() !== '' && x.id.trim() === c.id.trim()).length > 1)
+    checks.push({t:'Check: another case has the same Case ID.', cls:'warn'});
+  ['base','post','h1'].forEach(s => {
+    const all = s === 'base' ? FIELDS.base.concat(FIELDS.baseUs) : s === 'post' ? FIELDS.post : FIELDS.h1.concat(FIELDS.h1Us);
+    all.forEach(f => {
+      const v = num(c[s][f.k]); const rg = RANGES[f.k];
+      if (v != null && rg && (v < rg[0] || v > rg[1])) checks.push({t:'Check: ' + SECTION_NAMES[s] + ' ' + f.l + ' = ' + v + ' is outside the usual range (' + rg[0] + ' to ' + rg[1] + '). Possible typing error.', cls:'warn'});
+    });
+  });
+  const ag = num(c.age); if (ag != null && (ag < 0 || ag > 120)) checks.push({t:'Check: age ' + ag + ' looks wrong.', cls:'warn'});
+  [['baseline', c.base], ['post-NIV', c.post], ['1 h', c.h1]].forEach(a => {
+    const ei = num(a[1].ei), ee = num(a[1].ee);
+    if (ei != null && ee != null && ee <= 0) checks.push({t:'Check: ' + a[0] + ' end-expiratory thickness must be above 0 to calculate DTF.', cls:'warn'});
+    else if (ei != null && ee != null && ei < ee) checks.push({t:'Check: ' + a[0] + ' inspiratory thickness is smaller than expiratory, so DTF is negative. Check the entries.', cls:'warn'});
+  });
+  if (checks.length) sec.push({h:'Data checks', lines:checks});
+
+  /* calculated values */
+  const inpDe = r.de0 == null ? 'missing' : r.de0 + ' cm';
+  sec.push({h:'Calculated values', lines:[
+    {t:'DTF % baseline: ' + fx(r.dtf0,1,'%') + ' | post-NIV: ' + fx(r.dtfP,1,'%') + ' | 1 h: ' + fx(r.dtf1,1,'%')},
+    {t:'RR/DTF baseline: ' + fx(r.rd0,2) + ' | 1 h: ' + fx(r.rd1,2)},
+    {t:'Change in DTF baseline to post-NIV: ' + fs(r.dAbs,1,' percentage points') + ' (relative ' + fs(r.dRel,1,'%') + ')'},
+    {t:'Change from baseline to 1 h: pH ' + fs(r.dpH,2) + ' | PaCO2 ' + fs(r.dCO2,1,' mmHg')},
+    {t:'DE baseline: ' + inpDe + ' | 1 h: ' + (r.de1 == null ? 'missing' : r.de1 + ' cm') + ' | HACOR baseline: ' + (r.hac0 == null ? 'missing' : r.hac0) + ' | 1 h: ' + (r.hac1 == null ? 'missing' : r.hac1)}
+  ]});
+
+  /* 1. baseline interpretation */
+  const L1 = [];
+  if (r.dtf0 == null) L1.push({t:'Baseline DTF: missing. No impairment or workload pattern can be assigned.'});
+  else if (E('b_dtf_imp').value != null && r.dtf0 < E('b_dtf_imp').value) {
+    used.add('b_dtf_imp');
+    L1.push({t:'Impairment pattern: baseline DTF ' + r.dtf0 + '% meets the cutoff ' + describe('b_dtf_imp') + '. Source: ' + srcOf('b_dtf_imp') + '.'});
+  } else if (E('b_dtf_work').value != null && r.dtf0 > E('b_dtf_work').value) {
+    used.add('b_dtf_work');
+    L1.push({t:'Excessive workload pattern: baseline DTF ' + r.dtf0 + '% meets the cutoff ' + describe('b_dtf_work') + '. Source: ' + srcOf('b_dtf_work') + '.'});
+  } else {
+    used.add('b_dtf_imp'); used.add('b_dtf_work');
+    L1.push({t:'Intermediate: baseline DTF ' + r.dtf0 + '% is neither below ' + describe('b_dtf_imp') + ' nor above ' + describe('b_dtf_work') + '. Sources: ' + srcOf('b_dtf_imp') + '; ' + srcOf('b_dtf_work') + '.'});
+  }
+  if (r.de0 == null) L1.push({t:'Baseline DE: missing.'});
+  else {
+    used.add('b_de_low'); used.add('b_de_dys');
+    L1.push({t:'Baseline DE ' + r.de0 + ' cm. Low excursion (' + describe('b_de_low') + '): ' + (r.de0 < E('b_de_low').value ? 'YES' : 'no') + '. Source: ' + srcOf('b_de_low') + '.'});
+    L1.push({t:'Baseline DE ' + r.de0 + ' cm. Dysfunction (' + describe('b_de_dys') + ' or negative motion): ' + (r.de0 < E('b_de_dys').value ? 'YES' : 'no') + '. Source: ' + srcOf('b_de_dys') + '.'});
+  }
+  sec.push({h:'1. Baseline interpretation', lines:L1});
+
+  /* 2. mechanical unloading */
+  const lo = E('x_unlo').value, hi = E('x_unhi').value;
+  let unl = 'missing', unlTxt;
+  if (r.dtf0 == null || r.dtfP == null || lo == null || hi == null) {
+    unlTxt = 'Mechanical unloading (DTF toward ' + lo + '-' + hi + '% after NIV): missing (needs baseline and post-NIV DTF).';
+  } else {
+    used.add('x_unlo'); used.add('x_unhi');
+    const dist = x => x < lo ? lo - x : x > hi ? x - hi : 0;
+    const inRange = r.dtfP >= lo && r.dtfP <= hi;
+    unl = (inRange || dist(r.dtfP) < dist(r.dtf0)) ? 'yes' : 'no';
+    unlTxt = 'Mechanical unloading (DTF toward ' + lo + '-' + hi + '% after NIV): ' + unl + '. DTF went from ' + r.dtf0 + '% to ' + r.dtfP + '%' + (inRange ? ', now inside the range' : ', outside the range') + '. Source: ' + srcOf('x_unlo') + '.';
+  }
+  sec.push({h:'2. Mechanical unloading', lines:[{t:unlTxt}]});
+
+  /* 3. 1 hour status */
+  const sigs = [];
+  const S = (kind, k, val, fn, unit) => {
+    const e = E(k); let st = 'missing';
+    if (val != null && e.value != null) { st = fn(val, e.value) ? 'met' : 'not met'; used.add(k); }
+    sigs.push({kind:kind, desc:describe(k), st:st, val:val == null ? 'missing' : val + unit, src:srcOf(k)});
+  };
+  S('success','s_dtf',r.dtf1,(x,v)=>x>=v,'%');
+  S('success','s_de',r.de1,(x,v)=>x>v,' cm');
+  S('success','s_rr',r.rd1,(x,v)=>x<v,'');
+  S('success','s_hacor',r.hac1,(x,v)=>x<v,'');
+  S('failure','f_dtf26',r.dtf1,(x,v)=>x<v,'%');
+  S('failure','f_dtf36',r.dtf1,(x,v)=>x<v,'%');
+  S('failure','f_de',r.de1,(x,v)=>x<v,' cm');
+  S('failure','f_rr',r.rd1,(x,v)=>x>v,'');
+  S('failure','f_hacor',r.hac1,(x,v)=>x>v,'');
+  {
+    const m = c.h1.mm; let st = 'missing';
+    if (m === 'yes' || m === 'no') { st = m === 'yes' ? 'met' : 'not met'; used.add('f_mm'); }
+    sigs.push({kind:'failure', desc:describe('f_mm'), st:st, val:m === 'yes' || m === 'no' ? m : 'missing', src:srcOf('f_mm')});
+  }
+  {
+    const ep = E('f_ph'), ec = E('f_pco2'); let any = false, bad = false;
+    if (r.dpH != null && ep.value != null) { any = true; used.add('f_ph'); if (r.dpH <= ep.value) bad = true; }
+    if (r.dCO2 != null && ec.value != null) { any = true; used.add('f_pco2'); if (r.dCO2 >= ec.value) bad = true; }
+    sigs.push({kind:'failure', desc:'pH not improved (' + describe('f_ph') + ') or PaCO2 not falling (' + describe('f_pco2') + ')',
+      st:any ? (bad ? 'met' : 'not met') : 'missing', val:'change in pH ' + fs(r.dpH,2) + ', change in PaCO2 ' + fs(r.dCO2,1,' mmHg'),
+      src:srcOf('f_ph') + (srcOf('f_pco2') !== srcOf('f_ph') ? '; ' + srcOf('f_pco2') : '')});
+  }
+  const ev = sigs.filter(s => s.st !== 'missing').length;
+  const nS = sigs.filter(s => s.kind === 'success' && s.st === 'met').length;
+  const nF = sigs.filter(s => s.kind === 'failure' && s.st === 'met').length;
+  const totS = sigs.filter(s => s.kind === 'success').length, totF = sigs.filter(s => s.kind === 'failure').length;
+  let pattern, tag;
+  if (ev < ENGINE.minEvaluable || nS + nF === 0) { pattern = 'Insufficient data'; tag = 'grey'; }
+  else if (nS > 0 && nF > 0) { pattern = 'Discordant: signals disagree, review clinically'; tag = 'amber'; }
+  else if (nS > 0) { pattern = 'Concordant success pattern'; tag = 'green'; }
+  else { pattern = 'Concordant failure pattern'; tag = 'red'; }
+  const L3 = [
+    {t:'Pattern: ' + pattern, cls:'pattern ' + tag, plain:true},
+    {t:'Success signals met: ' + nS + ' of ' + totS + ' | Failure signals met: ' + nF + ' of ' + totF + ' | Signals with data: ' + ev + ' of ' + sigs.length + ' (minimum ' + ENGINE.minEvaluable + ' needed).'}
+  ];
+  if (ev >= ENGINE.minEvaluable && nS + nF === 0) L3.push({t:'Note: data are present but no success or failure cutoff was met.'});
+  if (r.dtf1 != null && r.dtf1 >= E('f_dtf26').value && r.dtf1 < E('f_dtf36').value && E('s_dtf').value != null && r.dtf1 >= E('s_dtf').value)
+    L3.push({t:'Note: 1 h DTF ' + r.dtf1 + '% sits between the success cutoff and the Mercurio failure cutoff. These come from different sources and overlap, so this is expected to look discordant.'});
+  sigs.forEach(s => L3.push({
+    t:(s.kind === 'success' ? 'Success signal: ' : 'Failure signal: ') + s.desc + ' | value: ' + s.val + ' | ' + s.st.toUpperCase() + ' | Source: ' + s.src,
+    cls:s.st === 'met' ? 'met' : ''
+  }));
+  sec.push({h:'3. 1 hour status', lines:L3});
+
+  /* 4. special flag */
+  const w = E('b_dtf_work').value, ac = E('x_acid').value, hf = E('f_hacor').value;
+  const ph1 = num(c.h1.ph);
+  const acid = ph1 != null && ac != null && ph1 < ac;
+  const hacHigh = r.hac1 != null && hf != null && r.hac1 > hf;
+  let flagOn = false;
+  if (w != null && r.dtf0 != null && r.dtf1 != null && r.dtf0 > w && r.dtf1 > w && (acid || hacHigh)) {
+    flagOn = true; used.add('b_dtf_work'); if (acid) used.add('x_acid'); if (hacHigh) used.add('f_hacor');
+  }
+  sec.push({h:'4. Special flag', lines:[flagOn
+    ? {t:FLAG_TEXT, cls:'met'}
+    : {t:'Not triggered. (Rule: baseline DTF above ' + w + '% and 1 h DTF still above it, with 1 h pH below ' + ac + ' or 1 h HACOR above ' + hf + '. Missing data cannot trigger it.)'}]});
+
+  /* 5. prediction vs outcome */
+  const m = matchOf(pattern, c.outcome);
+  sec.push({h:'5. Prediction vs outcome', lines:[{t:m.text}]});
+
+  /* 6. closing line */
+  sec.push({h:'6. Note', lines:[{t:CLOSING}]});
+
+  /* 7. verify list */
+  const vl = [];
+  Object.keys(CUTOFFS).forEach(k => { if (used.has(k) && !E(k).verified) vl.push({t:E(k).label + ': ' + describe(k) + ' | Source: ' + E(k).source, cls:'verify'}); });
+  if (!vl.length) vl.push({t:'Every cutoff used in this case is marked verified.'});
+  sec.push({h:'7. VERIFY list (cutoffs used here that are not yet verified)', lines:vl});
+
+  const text = 'Case ' + (c.id || '(no ID)') + (c.age ? ', age ' + c.age : '') + (c.sex ? ', sex ' + c.sex : '') + ' (AECOPD, NIV)\n\n' +
+    sec.map(s => s.h.toUpperCase() + '\n' + s.lines.map(l => '- ' + l.t).join('\n')).join('\n\n');
+  const html = sec.map(s => '<h3>' + esc(s.h) + '</h3>' + s.lines.map(l =>
+    l.plain ? '<div class="' + esc(l.cls) + '">' + esc(l.t) + '</div>'
+    : '<ul><li class="' + esc(l.cls || '') + (l.cls === 'warn' ? '' : '') + '">' + esc(l.t) + '</li></ul>').join('')).join('');
+  return {r:r, pattern:pattern, tag:tag, text:text, html:html, match:m, nS:nS, nF:nF};
+}
+
+function matchOf(pattern, outcome) {
+  const oc = outcome === 'success' || outcome === 'failure' ? outcome : '';
+  if (!oc) return {code:null, yn:'-', text:'Outcome not yet known, so the prediction cannot be scored.'};
+  const pf = pattern.indexOf('failure') > -1, ps = pattern.indexOf('success') > -1;
+  if (!pf && !ps) return {code:null, yn:'-', text:'Outcome known (' + (oc === 'failure' ? 'NIV failure' : 'NIV success') + '), but the pattern made no call (' + pattern + '), so it is not scored.'};
+  if (pf && oc === 'failure') return {code:'TP', yn:'yes', text:'Matched: true positive (pattern predicted NIV failure, NIV failed).'};
+  if (ps && oc === 'success') return {code:'TN', yn:'yes', text:'Matched: true negative (pattern predicted NIV success, NIV succeeded).'};
+  if (pf && oc === 'success') return {code:'FP', yn:'no', text:'Did not match: false positive (pattern predicted NIV failure, NIV succeeded).'};
+  return {code:'FN', yn:'no', text:'Did not match: false negative (pattern predicted NIV success, NIV failed).'};
+}
+
+/* ---------- rendering: cases view ---------- */
+function renderList() {
+  const tagLabel = {green:'success pattern', red:'failure pattern', amber:'discordant', grey:'incomplete'};
+  $('list').innerHTML = '<h2>Cases (' + state.cases.length + ')</h2>' + state.cases.map((c, i) => {
+    const a = analyze(c);
+    return '<button class="item' + (i === sel ? ' sel' : '') + '" data-act="sel" data-i="' + i + '"><span class="dot ' + a.tag + '"></span><span><b>' +
+      esc(c.id || '(no ID)') + '</b><small>' + esc([c.age ? c.age + ' y' : '', c.sex].filter(Boolean).join(', ') || 'no age/sex') + ' | ' + tagLabel[a.tag] + '</small></span></button>';
+  }).join('') + '<div class="row"><button class="btn primary" data-act="add">+ Add case</button></div>' +
+  '<p class="help">Green = success pattern, red = failure pattern, amber = discordant, grey = incomplete.</p>';
+}
+
+function fieldHtml(sec, f, c) {
+  const v = sec ? c[sec][f.k] : c[f.k];
+  return '<label class="fld"><span>' + esc(f.l) + '</span><input type="number" step="any" inputmode="decimal" data-sec="' + sec + '" data-k="' + f.k + '" value="' + esc(v == null ? '' : v) + '">' +
+    (f.h ? '<small>' + esc(f.h) + '</small>' : '') + '</label>';
+}
+function renderForm() {
+  const c = cur();
+  if (!c) { $('form').innerHTML = '<p>No cases. Click "+ Add case".</p>'; return; }
+  const g = (sec, arr) => '<div class="grid">' + arr.map(f => fieldHtml(sec, f, c)).join('') + '</div>';
+  const sel2 = (sec, k, opts, v) => '<select data-sec="' + sec + '" data-k="' + k + '">' + opts.map(o => '<option value="' + o[0] + '"' + (o[0] === v ? ' selected' : '') + '>' + o[1] + '</option>').join('') + '</select>';
+  $('form').innerHTML =
+    '<h2>Case form</h2>' +
+    '<div class="grid">' +
+      '<label class="fld"><span>Case ID (code only)</span><input type="text" data-sec="" data-k="id" maxlength="20" value="' + esc(c.id) + '"><small>Example: C1. No names, MRN, DOB or phone numbers.</small></label>' +
+      '<label class="fld"><span>Age (years)</span><input type="number" step="1" inputmode="numeric" data-sec="" data-k="age" value="' + esc(c.age) + '"></label>' +
+      '<label class="fld"><span>Sex</span>' + sel2('', 'sex', [['','Not entered'],['M','Male'],['F','Female'],['Other','Other']], c.sex) + '</label>' +
+    '</div>' +
+    '<label style="display:block;margin-top:10px;font-weight:600"><input type="checkbox" style="width:auto" data-sec="" data-k="nonCopd"' + (c.nonCopd ? ' checked' : '') + '> This is a non-COPD case</label>' +
+    '<div id="nonCopdWarn"></div>' +
+    '<fieldset><legend>A. Baseline (before NIV)</legend>' + g('base', FIELDS.base) +
+      '<h3>Ultrasound and score</h3><span class="help">' + esc(HELP_DTF) + '</span>' + g('base', FIELDS.baseUs) + '<div class="calc" id="calc-base"></div></fieldset>' +
+    '<fieldset><legend>B. Immediately post-NIV</legend><span class="help">' + esc(HELP_DTF) + '</span>' + g('post', FIELDS.post) + '<div class="calc" id="calc-post"></div></fieldset>' +
+    '<fieldset><legend>C. 1 hour post-NIV</legend>' + g('h1', FIELDS.h1) +
+      '<h3>Ultrasound and score</h3><span class="help">' + esc(HELP_DTF) + '</span>' + g('h1', FIELDS.h1Us) +
+      '<div class="grid" style="margin-top:12px"><label class="fld"><span>Paradoxical or flat M-mode</span>' + sel2('h1', 'mm', [['','Not entered'],['yes','Yes'],['no','No']], c.h1.mm || '') +
+      '<small>Yes = paradoxical movement or flat trace on M-mode.</small></label></div><div class="calc" id="calc-h1"></div></fieldset>' +
+    '<fieldset><legend>D. Outcome</legend><div class="grid"><label class="fld"><span>NIV outcome</span>' +
+      sel2('', 'outcome', [['','Not yet known'],['success','NIV success'],['failure','NIV failure (intubated)']], c.outcome) + '</label></div>' +
+      '<label class="fld" style="margin-top:10px"><span>Notes (free text, no identifiers)</span><textarea rows="3" data-sec="" data-k="notes">' + esc(c.notes) + '</textarea></label></fieldset>' +
+    '<div class="row"><button class="btn danger" data-act="del">Delete this case</button></div>';
+}
+function updateCalcs(a) {
+  const r = a.r, c = cur();
+  if (!$('calc-base')) return;
+  $('calc-base').innerHTML = '<b>Calculated:</b> DTF ' + fx(r.dtf0,1,'%') + ' | RR/DTF ' + fx(r.rd0,2);
+  $('calc-post').innerHTML = '<b>Calculated:</b> DTF ' + fx(r.dtfP,1,'%') + ' | change from baseline ' + fs(r.dAbs,1,' percentage points') + ' (relative ' + fs(r.dRel,1,'%') + ')';
+  $('calc-h1').innerHTML = '<b>Calculated:</b> DTF ' + fx(r.dtf1,1,'%') + ' | RR/DTF ' + fx(r.rd1,2) + ' | change in pH ' + fs(r.dpH,2) + ' | change in PaCO2 ' + fs(r.dCO2,1,' mmHg');
+  $('nonCopdWarn').innerHTML = c.nonCopd ? '<div class="warn">Warning: these cutoffs were not designed for non-COPD patients. This tool is for AECOPD only.</div>' : '';
+}
+function renderInf() {
+  const c = cur();
+  if (!c) { $('inf').innerHTML = '<h2>Inference</h2><p>No case selected.</p>'; return; }
+  const a = analyze(c);
+  $('inf').innerHTML = '<h2>Inference</h2><div class="row" style="margin:0 0 6px"><button class="btn primary" data-act="copyInf">Copy inference</button><button class="btn" data-act="print">Print one-pager</button></div>' + a.html;
+  updateCalcs(a);
+}
+function renderCases() { renderList(); renderForm(); renderInf(); }
+
+/* ---------- summary view ---------- */
+const SUM_HEAD = ['Case ID','Baseline DTF %','Post-NIV DTF %','1 h DTF %','1 h DE (cm)','1 h RR/DTF','1 h HACOR','Pattern','Outcome','Match'];
+function sumRows() {
+  return state.cases.map(c => {
+    const a = analyze(c), r = a.r;
+    const oc = c.outcome === 'success' ? 'NIV success' : c.outcome === 'failure' ? 'NIV failure' : 'not yet known';
+    return [c.id || '(no ID)', fx(r.dtf0,1), fx(r.dtfP,1), fx(r.dtf1,1), r.de1 == null ? 'missing' : String(r.de1), fx(r.rd1,2), r.hac1 == null ? 'missing' : String(r.hac1), a.pattern, oc, a.match.yn];
+  });
+}
+function renderSummary() {
+  const rows = sumRows();
+  const cnt = {TP:0, FP:0, TN:0, FN:0};
+  state.cases.forEach(c => { const m = analyze(c).match.code; if (m) cnt[m]++; });
+  $('summary').innerHTML = '<h2>Summary of all cases</h2><div class="row" style="margin:0 0 10px"><button class="btn primary" data-act="copyTable">Copy table</button></div>' +
+    '<div class="tablewrap"><table><thead><tr>' + SUM_HEAD.map(h => '<th>' + esc(h) + '</th>').join('') + '</tr></thead><tbody>' +
+    rows.map(r => '<tr>' + r.map(x => '<td>' + esc(x) + '</td>').join('') + '</tr>').join('') + '</tbody></table></div>' +
+    '<p class="help">Match = did the signal pattern agree with the known outcome, scored as a prediction of NIV failure. "-" means the outcome is unknown or the pattern made no call. "missing" means no data entered.</p>' +
+    '<p><b>Scored cases:</b> true positive ' + cnt.TP + ', false positive ' + cnt.FP + ', true negative ' + cnt.TN + ', false negative ' + cnt.FN + ' (descriptive only; too few cases for statistics).</p>' +
+    '<p class="help">' + esc(CLOSING) + '</p>';
+}
+
+/* ---------- settings view ---------- */
+function renderSettings() {
+  let h = '<h2>Cutoff settings</h2><p class="help">Edit any number or source text. Tick "verified" only after you have confirmed the cutoff in the original paper. Changes are saved in this browser. Orange edge = still VERIFY, green edge = verified.</p>' +
+    '<p id="vcount"></p><div class="row" style="margin:0 0 10px"><button class="btn danger" data-act="resetCut">Reset all cutoffs to the defaults in the code</button></div>';
+  let group = '';
+  Object.keys(CUTOFFS).forEach(k => {
+    const e = cut(k);
+    if (e.group !== group) {
+      if (group) h += '</tbody></table></div>';
+      group = e.group;
+      h += '<h3>' + esc(group) + '</h3><div class="tablewrap"><table><thead><tr><th>Cutoff</th><th>Value used</th><th>Study range as published</th><th>Source</th><th>Verified</th></tr></thead><tbody>';
+    }
+    h += '<tr class="' + (e.verified ? 'ver' : 'unv') + '" data-row="' + k + '"><td><b>' + esc(e.label) + '</b><br><small>' + esc(e.what + ' ' + e.op) + '</small></td><td>' +
+      (e.value == null && k === 'f_mm' ? '<small>yes/no flag</small>' : '<input type="number" step="any" data-ck="' + k + '" data-f="value" value="' + esc(e.value) + '">' + esc(e.unit || '')) +
+      '</td><td>' + esc(e.range || 'none') + '</td><td><input type="text" data-ck="' + k + '" data-f="source" value="' + esc(e.source) + '"></td>' +
+      '<td><label><input type="checkbox" style="width:auto" data-ck="' + k + '" data-f="verified"' + (e.verified ? ' checked' : '') + '> verified</label></td></tr>';
+  });
+  h += '</tbody></table></div><div class="row"><button class="btn danger" data-act="erase">Erase all stored data in this browser</button></div>';
+  $('settings').innerHTML = h;
+  updVcount();
+}
+function updVcount() {
+  const ks = Object.keys(CUTOFFS), v = ks.filter(k => cut(k).verified).length;
+  const el = $('vcount'); if (el) el.innerHTML = '<b>' + v + ' of ' + ks.length + ' cutoffs verified.</b> ' + (v < ks.length ? 'Unverified cutoffs are listed as VERIFY in every inference.' : '');
+}
+
+/* ---------- print one-pager ---------- */
+function printCase() {
+  const c = cur(); if (!c) return;
+  const a = analyze(c);
+  const tbl = (s, arr) => '<table><tbody>' + arr.map(f => '<tr><td>' + esc(f.l) + '</td><td>' + (num(c[s][f.k]) == null ? 'missing' : esc(c[s][f.k])) + '</td></tr>').join('') + '</tbody></table>';
+  const mm = c.h1.mm === 'yes' ? 'yes' : c.h1.mm === 'no' ? 'no' : 'missing';
+  $('printArea').innerHTML = '<h1>Diaphragm ultrasound and NIV (AECOPD): case ' + esc(c.id || '(no ID)') + '</h1>' +
+    '<p><b>Anonymized data only.</b> Age ' + esc(c.age || 'missing') + ', sex ' + esc(c.sex || 'missing') + (c.nonCopd ? ', NON-COPD (cutoffs not designed for this)' : '') +
+    '. Printed ' + new Date().toISOString().slice(0,10) + '.</p>' +
+    '<h3>A. Baseline</h3>' + tbl('base', FIELDS.base.concat(FIELDS.baseUs)) +
+    '<h3>B. Post-NIV</h3>' + tbl('post', FIELDS.post) +
+    '<h3>C. 1 hour post-NIV</h3>' + tbl('h1', FIELDS.h1.concat(FIELDS.h1Us)) + '<p>Paradoxical or flat M-mode: ' + mm + '</p>' +
+    '<h3>D. Outcome</h3><p>' + (c.outcome === 'success' ? 'NIV success' : c.outcome === 'failure' ? 'NIV failure (intubated)' : 'Not yet known') + '. Notes: ' + esc(c.notes || 'none') + '</p>' +
+    '<div class="inf">' + a.html + '</div>';
+  setTimeout(() => window.print(), 50);
+}
+
+/* ---------- export / backup / restore ---------- */
+function download(name, text, type) {
+  const b = new Blob([text], {type:type}); const a = document.createElement('a');
+  a.href = URL.createObjectURL(b); a.download = name; document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+}
+const stamp = () => new Date().toISOString().slice(0, 10);
+function csvCell(v) { v = v == null ? '' : String(v); return /[",\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }
+function exportCsv() {
+  const head = ['Case ID','Age','Sex','Non-COPD'];
+  const keys = [];
+  ['base','post','h1'].forEach(s => {
+    const arr = s === 'base' ? FIELDS.base.concat(FIELDS.baseUs) : s === 'post' ? FIELDS.post : FIELDS.h1.concat(FIELDS.h1Us);
+    arr.forEach(f => { keys.push([s, f.k]); head.push(SECTION_NAMES[s] + ' ' + f.l); });
+  });
+  head.push('1 h paradoxical/flat M-mode');
+  head.push('DTF % baseline','DTF % post-NIV','DTF % 1 h','RR/DTF baseline','RR/DTF 1 h','DTF change abs (pct points)','DTF change relative %','pH change baseline to 1 h','PaCO2 change baseline to 1 h',
+    'Success signals met','Failure signals met','Pattern','Outcome','Match','Notes');
+  const rows = state.cases.map(c => {
+    const a = analyze(c), r = a.r;
+    const row = [c.id, c.age, c.sex, c.nonCopd ? 'yes' : 'no'];
+    keys.forEach(k => row.push(c[k[0]][k[1]] == null ? '' : c[k[0]][k[1]]));
+    row.push(c.h1.mm || '');
+    [r.dtf0,r.dtfP,r.dtf1,r.rd0,r.rd1,r.dAbs,r.dRel,r.dpH,r.dCO2].forEach(x => row.push(x == null ? '' : x));
+    row.push(a.nS, a.nF, a.pattern, c.outcome, a.match.yn === '-' ? '' : a.match.yn, c.notes);
+    return row;
+  });
+  download('diaphragm-niv-cases-' + stamp() + '.csv', '﻿' + [head].concat(rows).map(r => r.map(csvCell).join(',')).join('\r\n'), 'text/csv;charset=utf-8');
+}
+function backupJson() {
+  download('diaphragm-niv-backup-' + stamp() + '.json', JSON.stringify({app:'diaphragm-niv-tracker', version:1, exportedAt:new Date().toISOString(), cases:state.cases, cutoffs:state.cutoffs}, null, 2), 'application/json');
+}
+function restoreJson(file) {
+  const fr = new FileReader();
+  fr.onload = () => {
+    try {
+      const d = JSON.parse(fr.result);
+      if (!d || !Array.isArray(d.cases)) throw new Error('not a backup file');
+      if (!confirm('Replace everything currently in this browser with ' + d.cases.length + ' case(s) from the backup?')) return;
+      state = normalize(d); sel = 0; save(); renderAll();
+    } catch (e) { alert('Could not restore: this is not a valid backup file from this app.'); }
+  };
+  fr.readAsText(file);
+}
+
+/* ---------- copy ---------- */
+function copyText(t, btn) {
+  const done = () => { if (btn) { const o = btn.textContent; btn.textContent = 'Copied'; setTimeout(() => { btn.textContent = o; }, 1500); } };
+  const fb = () => {
+    const ta = document.createElement('textarea'); ta.value = t; ta.style.cssText = 'position:fixed;opacity:0'; document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); done(); } catch (e) { alert('Copy failed. Please select the text and copy it manually.'); }
+    ta.remove();
+  };
+  if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(t).then(done, fb); else fb();
+}
+
+/* ---------- events ---------- */
+function setView(v) {
+  view = v;
+  document.querySelectorAll('.view').forEach(x => x.classList.toggle('on', x.id === 'v-' + v));
+  document.querySelectorAll('[data-act=tab]').forEach(b => b.classList.toggle('on', b.dataset.view === v));
+  if (v === 'cases') renderCases(); else if (v === 'summary') renderSummary(); else renderSettings();
+}
+function renderAll() { setView(view); }
+const ACTIONS = {
+  tab: b => setView(b.dataset.view),
+  sel: b => { sel = Number(b.dataset.i); renderCases(); },
+  add: () => {
+    let n = state.cases.length + 1; const ids = state.cases.map(c => c.id);
+    while (ids.indexOf('C' + n) > -1) n++;
+    state.cases.push(blankCase('C' + n)); sel = state.cases.length - 1; save(); renderCases();
+  },
+  del: () => {
+    if (!confirm('Delete case ' + (cur().id || '(no ID)') + '? This cannot be undone (make a JSON backup first if unsure).')) return;
+    state.cases.splice(sel, 1); sel = Math.max(0, Math.min(sel, state.cases.length - 1)); save(); renderCases();
+  },
+  copyInf: b => { const c = cur(); if (c) copyText(analyze(c).text, b); },
+  copyTable: b => copyText([SUM_HEAD].concat(sumRows()).map(r => r.join('\t')).join('\n'), b),
+  csv: exportCsv, backup: backupJson, print: () => { if (view !== 'cases') setView('cases'); printCase(); },
+  restore: () => { $('restoreFile').value = ''; $('restoreFile').click(); },
+  resetCut: () => { if (confirm('Reset every cutoff, source and verified tick to the defaults in the code?')) { state.cutoffs = {}; save(); renderSettings(); } },
+  erase: () => {
+    if (!confirm('Erase ALL cases and settings stored in this browser? Make a JSON backup first if you need the data.')) return;
+    try { localStorage.removeItem(STORE_KEY); } catch (e) {}
+    state = normalize({}); sel = 0; renderAll();
+  }
+};
+document.addEventListener('click', e => { const b = e.target.closest('[data-act]'); if (b && ACTIONS[b.dataset.act]) ACTIONS[b.dataset.act](b); });
+$('restoreFile').addEventListener('change', e => { if (e.target.files[0]) restoreJson(e.target.files[0]); });
+
+$('form').addEventListener('input', e => {
+  const t = e.target, k = t.dataset.k; if (!k) return;
+  const c = cur(); if (!c) return;
+  const v = t.type === 'checkbox' ? t.checked : t.value;
+  if (t.dataset.sec) c[t.dataset.sec][k] = v; else c[k] = v;
+  save(); renderList(); renderInf();
+});
+$('settings').addEventListener('input', e => {
+  const t = e.target, k = t.dataset.ck; if (!k) return;
+  const f = t.dataset.f, o = state.cutoffs[k] || (state.cutoffs[k] = {});
+  if (f === 'value') o.value = num(t.value); else if (f === 'source') o.source = t.value; else o.verified = t.checked;
+  if (f === 'verified') { const row = t.closest('tr'); row.className = t.checked ? 'ver' : 'unv'; }
+  save(); updVcount();
+});
+
+renderAll();
+</script>
+</body>
+</html>
